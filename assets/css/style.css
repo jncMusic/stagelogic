@@ -222,10 +222,32 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 
 /* 꼬리말 */
 .site-footer { background: var(--ink); color: #9f9eaa; padding: 52px 0 40px; font-size: .9rem; }
-.site-footer .top { display: flex; justify-content: space-between; gap: 30px; flex-wrap: wrap; margin-bottom: 28px; }
-.site-footer .logo { color: var(--white); margin-bottom: 8px; }
-.site-footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
-.site-footer nav a { text-decoration: none; color: #c9c8d2; }
-.site-footer nav a:hover { color: var(--gold); }
+.site-footer .foot-brand { margin-bottom: 40px; }
+.site-footer .foot-brand .logo { font-size: .95rem; color: var(--white); }
+.foot-tagline { color: var(--white); font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 800; letter-spacing: -0.02em; margin: 10px 0 0; }
+.foot-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-bottom: 40px; }
+.foot-cols h2 { color: var(--white); font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+.foot-cols a { display: block; text-decoration: none; color: #a9a8b3; padding: 4px 0; }
+.foot-cols a:hover { color: var(--gold); }
+@media (max-width: 760px) { .foot-cols { grid-template-columns: 1fr 1fr; } }
 .site-footer .biz { border-top: 1px solid #2c2e3b; padding-top: 22px; line-height: 1.9; }
 .site-footer .biz span + span::before { content: "|"; margin: 0 10px; color: #4a4c5a; }
+
+/* 제품 첫 화면 (클래스로직) */
+.product-hero {
+  text-align: center;
+  padding: 104px 0 112px;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(232, 128, 150, .35), transparent 32%),
+    radial-gradient(circle at 92% 85%, rgba(232, 128, 150, .28), transparent 30%),
+    radial-gradient(circle at 50% 110%, rgba(96, 140, 230, .35), transparent 55%),
+    linear-gradient(180deg, #f2f5fb 0%, #dfe7f6 100%);
+}
+.product-hero .sub { font-size: clamp(1.4rem, 3.2vw, 2.1rem); font-weight: 800; color: #5b6f8c; margin: 6px 0 8px; letter-spacing: -0.02em; }
+.product-hero h1 { font-size: clamp(1.7rem, 4.2vw, 2.9rem); font-weight: 800; color: #1d2433; }
+.product-hero .lead { color: #4a5568; max-width: 640px; margin: 18px auto 0; font-size: 1.05rem; }
+.product-hero .actions { margin-top: 36px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.product-hero .btn { border-radius: 10px; min-width: 170px; }
+.btn-soft { background: #e8ebfb; color: #1d2433; }
+.btn-blue { background: #2b5cf0; color: var(--white); }
+.btn-blue:hover { background: #1f4bd6; }
