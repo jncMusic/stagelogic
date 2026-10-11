@@ -355,15 +355,7 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .timeline p { margin: 0; color: var(--muted); }
 @media (max-width: 560px) { .timeline li { grid-template-columns: 1fr; gap: 4px; } }
 
-/* 공연기획: 사진 머리 · 숫자 · 연도별 이력 */
-.photo-head h1 { max-width: 620px; text-wrap: balance; }
-.photo-head {
-  background:
-    linear-gradient(90deg, rgba(18,19,26,.95) 0%, rgba(18,19,26,.86) 50%, rgba(18,19,26,.4) 100%),
-    url("/assets/img/musewind-concert.jpg") center 40% / cover no-repeat, var(--ink);
-  padding: 120px 0 110px;
-}
-@media (max-width: 760px) { .photo-head { background: linear-gradient(rgba(18,19,26,.82), rgba(18,19,26,.82)), url("/assets/img/musewind-concert.jpg") center / cover no-repeat, var(--ink); } }
+/* 공연기획: 숫자 · 연도별 이력 */
 
 .stats { background: var(--white); border-bottom: 1px solid var(--line); }
 .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
