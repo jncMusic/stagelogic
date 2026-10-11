@@ -375,3 +375,22 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .partner-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .partner-list li { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 16px; text-align: center; font-weight: 700; }
 @media (max-width: 760px) { .partner-list { grid-template-columns: 1fr 1fr; } }
+
+/* 홈페이지 제작: 비용 */
+.plans { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 760px) { .plans { grid-template-columns: 1fr; } }
+.plan { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 34px 30px; display: flex; flex-direction: column; }
+.plan-pro { background: var(--ink); color: var(--white); border-color: var(--ink); }
+.plan-name { font-size: 1.3rem; font-weight: 800; }
+.plan-for { color: var(--muted); margin: 4px 0 18px; }
+.plan-pro .plan-for, .plan-pro .plan-vat { color: #b5b4bf; }
+.plan-price { display: flex; align-items: baseline; gap: 6px; }
+.plan-price b { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; color: var(--web); font-variant-numeric: tabular-nums; }
+.plan-pro .plan-price b { color: var(--gold); font-size: clamp(1.6rem, 4vw, 2.1rem); }
+.plan-price span { font-weight: 700; }
+.plan-vat { font-size: .85rem; color: var(--muted); margin: 6px 0 22px; }
+.plan-list { list-style: none; padding: 0; margin: 0 0 28px; display: grid; gap: 8px; }
+.plan-list li { padding-left: 24px; position: relative; }
+.plan-list li::before { content: "✓"; position: absolute; left: 0; color: var(--web); font-weight: 800; }
+.plan-pro .plan-list li::before { color: var(--gold); }
+.plan .btn { margin-top: auto; align-self: flex-start; }
