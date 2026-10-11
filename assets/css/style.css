@@ -145,11 +145,9 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .biz-card.web .tag { color: var(--web); }
 .biz-card.solution .tag { color: var(--solution); }
 
-.value { text-align: center; padding: 28px 18px; }
-.value .hanja { font-size: 1.6rem; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
-.value p { font-size: .95rem; margin: 0; color: #c9c8d2; }
-.dark .value { background: var(--ink-3); border-color: transparent; }
-.dark .value h3 { color: var(--white); }
+.dark .point { background: var(--ink-3); border-color: transparent; }
+.dark .point h3 { color: var(--white); }
+.dark .point p { color: #c9c8d2; margin: 0; }
 
 /* 이름 풀이 */
 .name-split { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -284,3 +282,42 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .proof-we { font-size: .85rem; font-weight: 700; color: #4f46e5; margin-bottom: 6px; }
 
 .name-close { margin: 36px 0 0; font-size: clamp(1.1rem, 2.4vw, 1.35rem); font-weight: 700; letter-spacing: -0.02em; text-align: center; }
+
+.person ul { padding-left: 1.1em; margin: 0; color: #44434c; }
+
+/* 홈페이지 제작: 대표 사례 */
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 960px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .grid-4 { grid-template-columns: 1fr; } }
+
+.case { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 36px 0; }
+.case + .case { border-top: 1px solid var(--line); }
+.case:nth-of-type(even) .case-shot { order: 2; }
+@media (max-width: 860px) { .case { grid-template-columns: 1fr; gap: 28px; } .case:nth-of-type(even) .case-shot { order: 0; } }
+.case-text { min-width: 0; }
+.case-text .kind { color: var(--web); font-weight: 700; font-size: .85rem; letter-spacing: .06em; margin-bottom: 8px; }
+.case-text h3 { font-size: 1.7rem; font-weight: 800; }
+.case-text p { color: #44434c; }
+.feat { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 6px; }
+.feat li { padding-left: 24px; position: relative; font-weight: 600; }
+.feat li::before { content: "✓"; position: absolute; left: 0; color: var(--web); font-weight: 800; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.chips span { font-size: .8rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #e7eff6; color: var(--web); }
+.case .more { font-weight: 700; text-decoration: none; }
+.case .more::after { content: " →"; }
+
+.browser { border-radius: 14px; overflow: hidden; background: var(--white); border: 1px solid var(--line); box-shadow: 0 24px 50px rgba(18, 19, 26, .12); }
+.browser-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #eeebe4; }
+.browser-bar i { width: 10px; height: 10px; border-radius: 50%; background: #d3cec3; }
+.browser-bar span { margin-left: 10px; flex: 1; background: var(--white); border-radius: 6px; padding: 3px 10px; font-size: .78rem; color: var(--muted); }
+.browser-body { padding: 14px; display: grid; gap: 12px; }
+.mock-nav { height: 12px; width: 60%; border-radius: 4px; background: #e6e2d9; }
+.mock-hero { height: 150px; border-radius: 10px; display: grid; place-items: center; color: var(--white); font-size: 1.3rem; letter-spacing: -0.02em; }
+.kba .mock-hero { background: linear-gradient(135deg, #1f2f5c, #34508f); }
+.jnc .mock-hero { background: linear-gradient(135deg, #3a2a1c, #9a6a33); }
+.mock-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mock-row span { height: 56px; border-radius: 8px; background: #f1eee7; }
+
+.scope h3, .who h3 { font-size: 1.05rem; }
+.scope p, .who p { font-size: .92rem; color: var(--muted); margin: 0; }
+.scope { border-top: 3px solid var(--web); }
