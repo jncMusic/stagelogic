@@ -354,3 +354,32 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .timeline h3 { font-size: 1.1rem; margin-bottom: 4px; }
 .timeline p { margin: 0; color: var(--muted); }
 @media (max-width: 560px) { .timeline li { grid-template-columns: 1fr; gap: 4px; } }
+
+/* 공연기획: 사진 머리 · 숫자 · 연도별 이력 */
+.photo-head h1 { max-width: 620px; text-wrap: balance; }
+.photo-head {
+  background:
+    linear-gradient(90deg, rgba(18,19,26,.95) 0%, rgba(18,19,26,.86) 50%, rgba(18,19,26,.4) 100%),
+    url("/assets/img/musewind-concert.jpg") center 40% / cover no-repeat, var(--ink);
+  padding: 120px 0 110px;
+}
+@media (max-width: 760px) { .photo-head { background: linear-gradient(rgba(18,19,26,.82), rgba(18,19,26,.82)), url("/assets/img/musewind-concert.jpg") center / cover no-repeat, var(--ink); } }
+
+.stats { background: var(--white); border-bottom: 1px solid var(--line); }
+.stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.stats .wrap > div { padding: 30px 20px; border-left: 1px solid var(--line); }
+.stats .wrap > div:first-child { border-left: 0; }
+.stats b { display: block; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; color: var(--stage); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.stats span { color: var(--muted); font-size: .92rem; }
+@media (max-width: 760px) { .stats .wrap { grid-template-columns: 1fr 1fr; } .stats .wrap > div:nth-child(3) { border-left: 0; } .stats .wrap > div { border-top: 1px solid var(--line); } .stats .wrap > div:nth-child(-n+2) { border-top: 0; } }
+
+.year { display: grid; grid-template-columns: 110px 1fr; gap: 20px; margin-bottom: 18px; }
+.year-label { font-size: 1.6rem; font-weight: 800; color: var(--ink); margin: 0; line-height: 1.2; }
+.year .timeline li { grid-template-columns: 70px 1fr; padding-bottom: 18px; }
+.year .timeline h3 { font-size: 1.02rem; }
+@media (max-width: 560px) { .year { grid-template-columns: 1fr; gap: 10px; } .year .timeline li { grid-template-columns: 1fr; } }
+.hist-note { color: var(--muted); margin: 10px 0 0; }
+
+.partner-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.partner-list li { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 16px; text-align: center; font-weight: 700; }
+@media (max-width: 760px) { .partner-list { grid-template-columns: 1fr 1fr; } }

@@ -65,7 +65,6 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 - [ ] 대표 전화 · 이메일 (`assets/js/site.js`)
 - [ ] 공개용 주소를 넣을지 (사업자등록 주소가 주거지라면 넣지 않는 쪽 권장)
 - [ ] 포트폴리오 각 프로젝트의 역할 표기와 주최 기관의 게시 동의, 사진 사용 권한
-- [ ] 5·18 기념 음악회 일시
 - [ ] 회사 소개의 전문가 소개(이력) — 자료를 받으면 `about/index.html`의 `#people` 구역을 채우고 `hidden`을 지운다
 - [ ] 클래스로직 상표 (42류 유사 상표 'CLASSLOG' 출원 중) — 확정 전까지 "가칭 · 출시 예정" 유지
 - [ ] 도메인 (stagelogiccompany.com, stagelogic.company 등 등록 가능)
