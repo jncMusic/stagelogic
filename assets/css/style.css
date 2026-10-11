@@ -321,3 +321,36 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .scope h3, .who h3 { font-size: 1.05rem; }
 .scope p, .who p { font-size: .92rem; color: var(--muted); margin: 0; }
 .scope { border-top: 3px solid var(--web); }
+
+/* 공연기획 */
+.stage-kind { color: var(--stage) !important; }
+.stage-feat li::before { color: var(--stage); }
+.stage-scope { border-top-color: var(--stage); }
+.case .meta { font-size: .9rem; color: var(--muted); margin-bottom: 10px; }
+
+.cuesheet { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: 0 24px 50px rgba(18, 19, 26, .12); font-variant-numeric: tabular-nums; }
+.cue-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.cue-head b { font-size: 1.1rem; }
+.cue-head span { font-size: .8rem; color: var(--muted); }
+.cue-row { display: grid; grid-template-columns: 56px 52px 1fr auto; gap: 8px; align-items: center; padding: 10px 8px; border-bottom: 1px solid #f0ece4; font-size: .9rem; }
+.cue-cols { font-size: .75rem; font-weight: 700; color: var(--muted); border-bottom: 2px solid var(--line); }
+.cue-row.now { background: #fbf1ef; border-radius: 8px; font-weight: 700; }
+.cue-row .st { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.st.done { background: #eef0f4; color: #6b7280; }
+.st.live { background: var(--stage); color: var(--white); }
+.st.next { background: var(--gold-soft); color: #7a5f1f; }
+.cue-cap { text-align: center; font-size: .8rem; color: var(--muted); margin: 12px 0 0; }
+
+.docflow { list-style: none; counter-reset: doc; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.docflow li { counter-increment: doc; background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 20px; position: relative; }
+.docflow li::before { content: counter(doc, decimal-leading-zero); display: block; color: var(--stage); font-weight: 800; font-size: .85rem; margin-bottom: 6px; }
+.docflow li span { font-weight: 700; }
+@media (max-width: 860px) { .docflow { grid-template-columns: repeat(2, 1fr); } }
+
+.timeline { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--line); }
+.timeline li { display: grid; grid-template-columns: 120px 1fr; gap: 20px; padding: 0 0 26px 24px; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--stage); }
+.timeline time { font-weight: 800; color: var(--stage); font-variant-numeric: tabular-nums; }
+.timeline h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.timeline p { margin: 0; color: var(--muted); }
+@media (max-width: 560px) { .timeline li { grid-template-columns: 1fr; gap: 4px; } }
