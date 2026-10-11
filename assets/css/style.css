@@ -282,3 +282,5 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 
 .proof { border-left: 4px solid #4f46e5; }
 .proof-we { font-size: .85rem; font-weight: 700; color: #4f46e5; margin-bottom: 6px; }
+
+.name-close { margin: 36px 0 0; font-size: clamp(1.1rem, 2.4vw, 1.35rem); font-weight: 700; letter-spacing: -0.02em; text-align: center; }
