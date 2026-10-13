@@ -2,8 +2,8 @@
 
 // 대표 연락처. 확정되면 여기만 채우면 문의 화면과 꼬리말에 함께 반영된다.
 const CONTACT = {
-  email: '', // 예: 'hello@stagelogic.kr'
-  phone: '', // 예: '02-000-0000'
+  email: 'stagelogic@naver.com',
+  phone: '010-4028-9803',
 };
 
 // 모바일 메뉴 열고 닫기

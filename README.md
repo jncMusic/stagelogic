@@ -86,7 +86,7 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 
 ## 게시 전 확인할 것
 
-- [ ] 대표 전화 · 이메일 (`assets/js/site.js`)
+- [x] 대표 전화 · 이메일 (`assets/js/site.js`)
 - [ ] 공개용 주소를 넣을지 (사업자등록 주소가 주거지라면 넣지 않는 쪽 권장)
 - [ ] 포트폴리오 각 프로젝트의 역할 표기와 주최 기관의 게시 동의, 사진 사용 권한
 - [ ] 회사 소개의 전문가 소개(이력) — 자료를 받으면 `about/index.html`의 `#people` 구역을 채우고 `hidden`을 지운다
