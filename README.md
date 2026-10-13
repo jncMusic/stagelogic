@@ -58,7 +58,20 @@ python3 -m http.server 8000
 Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어 있습니다.
 `main`에 올라가면 정식 사이트가, PR을 올리면 미리보기 주소가 자동으로 만들어집니다.
 빌드 명령은 비워 두고, 출력 폴더는 저장소 최상위(`.`)로 둡니다.
-도메인을 연결하면 `sitemap.xml`을 추가하고 `robots.txt`에 그 주소를 적어 주세요.
+
+### 도메인
+
+정식 주소는 `stagelogic.kr` 입니다. 나머지 주소는 모두 이쪽으로 넘깁니다.
+
+| 주소 | 설정 |
+| --- | --- |
+| `stagelogic.kr` | 정식 주소 (Production) |
+| `www.stagelogic.kr` | `stagelogic.kr` 로 308 이동 |
+| `stagelogic.co.kr` | `stagelogic.kr` 로 308 이동 |
+| `www.stagelogic.co.kr` | `stagelogic.kr` 로 308 이동 |
+
+각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://stagelogic.kr` 기준입니다.
+페이지를 새로 만들면 `sitemap.xml` 에도 한 줄 추가해 주세요.
 
 ## 사업 점검표 (`/work/`)
 
@@ -78,4 +91,5 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 - [ ] 포트폴리오 각 프로젝트의 역할 표기와 주최 기관의 게시 동의, 사진 사용 권한
 - [ ] 회사 소개의 전문가 소개(이력) — 자료를 받으면 `about/index.html`의 `#people` 구역을 채우고 `hidden`을 지운다
 - [ ] 클래스로직 상표 (42류 유사 상표 'CLASSLOG' 출원 중) — 확정 전까지 "가칭 · 출시 예정" 유지
-- [ ] 도메인 (stagelogiccompany.com, stagelogic.company 등 등록 가능)
+- [x] 도메인 구입 (stagelogic.kr, stagelogic.co.kr)
+- [ ] 도메인 연결 (Vercel → Settings → Domains, 위 표대로)
