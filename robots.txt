@@ -3,4 +3,4 @@ Allow: /
 Disallow: /work/
 Disallow: /api/
 
-Sitemap: https://stagelogic.kr/sitemap.xml
+Sitemap: https://www.stagelogic.kr/sitemap.xml

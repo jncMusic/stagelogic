@@ -61,16 +61,16 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 
 ### 도메인
 
-정식 주소는 `stagelogic.kr` 입니다. 나머지 주소는 모두 이쪽으로 넘깁니다.
+정식 주소는 `www.stagelogic.kr` 입니다. (Vercel 기본 방식) 나머지 주소는 모두 이쪽으로 넘깁니다.
 
 | 주소 | 설정 |
 | --- | --- |
-| `stagelogic.kr` | 정식 주소 (Production) |
-| `www.stagelogic.kr` | `stagelogic.kr` 로 308 이동 |
-| `stagelogic.co.kr` | `stagelogic.kr` 로 308 이동 |
-| `www.stagelogic.co.kr` | `stagelogic.kr` 로 308 이동 |
+| `www.stagelogic.kr` | 정식 주소 (Production) |
+| `stagelogic.kr` | `www.stagelogic.kr` 로 308 이동 |
+| `stagelogic.co.kr` | `www.stagelogic.kr` 로 308 이동 |
+| `www.stagelogic.co.kr` | `www.stagelogic.kr` 로 308 이동 |
 
-각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://stagelogic.kr` 기준입니다.
+각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://www.stagelogic.kr` 기준입니다.
 페이지를 새로 만들면 `sitemap.xml` 에도 한 줄 추가해 주세요.
 
 ## 사업 점검표 (`/work/`)
