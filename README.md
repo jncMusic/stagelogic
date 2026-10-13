@@ -60,6 +60,17 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 빌드 명령은 비워 두고, 출력 폴더는 저장소 최상위(`.`)로 둡니다.
 도메인을 연결하면 `sitemap.xml`을 추가하고 `robots.txt`에 그 주소를 적어 주세요.
 
+## 사업 점검표 (`/work/`)
+
+회사 내부용 업무 점검표입니다. 비밀번호를 넣어야 열리고, 검색엔진에는 노출되지 않습니다.
+데이터는 Vercel Blob에 JSON 파일로 저장되며, 저장할 때마다 새 파일을 만들고 최근 5개를 백업으로 남깁니다.
+
+처음 한 번 Vercel 화면에서 설정합니다.
+
+1. 프로젝트 → Storage → Create → **Blob** 을 만들고 `stagelogic` 프로젝트에 연결합니다. (`BLOB_READ_WRITE_TOKEN` 이 자동으로 들어갑니다.)
+2. 프로젝트 → Settings → Environment Variables 에 `CHECKLIST_PASSWORD` 를 추가합니다.
+3. 다시 배포한 뒤 `/work/` 에서 비밀번호로 열고, 백업 파일(.json)을 불러옵니다.
+
 ## 게시 전 확인할 것
 
 - [ ] 대표 전화 · 이메일 (`assets/js/site.js`)
