@@ -394,3 +394,28 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .plan-list li::before { content: "✓"; position: absolute; left: 0; color: var(--web); font-weight: 800; }
 .plan-pro .plan-list li::before { color: var(--gold); }
 .plan .btn { margin-top: auto; align-self: flex-start; }
+
+/* 공연기획: 기업 음악회 */
+.head-actions { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+.program { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 26px 26px 18px; box-shadow: 0 24px 50px rgba(18, 19, 26, .12); }
+.prog-head { text-align: center; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 14px; }
+.prog-head span { display: block; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--stage); font-weight: 700; }
+.prog-head b { display: block; font-size: 1.5rem; letter-spacing: -0.02em; }
+.prog-head em { font-style: normal; color: var(--muted); font-size: .85rem; }
+.prog-part { font-weight: 800; font-size: .9rem; margin: 12px 0 6px; color: var(--stage); }
+.program ul { list-style: none; padding: 0; margin: 0; }
+.program li { padding: 5px 0 5px 16px; position: relative; font-size: .92rem; border-bottom: 1px dotted var(--line); }
+.program li::before { content: "♪"; position: absolute; left: 0; color: var(--gold); font-size: .8rem; }
+.prog-cap { text-align: center; font-size: .8rem; color: var(--muted); margin: 14px 0 0; }
+.size { border-top: 4px solid var(--stage); }
+.size-n { font-size: 1.6rem; font-weight: 800; color: var(--stage); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.handle { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 28px; }
+.handle li { padding: 12px 0 12px 30px; border-bottom: 1px solid #2c2e3b; position: relative; font-weight: 600; }
+.handle li::before { content: "✓"; position: absolute; left: 0; top: 12px; color: var(--gold); font-weight: 800; }
+@media (max-width: 640px) { .handle { grid-template-columns: 1fr; } }
+.steps-5 { grid-template-columns: repeat(5, 1fr); }
+.steps-5 li::before { content: none; }
+.steps-5 h3 { color: var(--stage); }
+@media (max-width: 960px) { .steps-5 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .steps-5 { grid-template-columns: 1fr; } }
+.corp { display: inline-block; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #fbf1ef; color: var(--stage); vertical-align: 2px; margin-left: 4px; }
