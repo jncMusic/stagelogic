@@ -1,3 +1,11 @@
 {
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.stagelogic.co.kr" }],
+      "destination": "https://www.stagelogic.kr/:path*",
+      "permanent": true
+    }
+  ]
 }

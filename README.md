@@ -68,7 +68,7 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 | `www.stagelogic.kr` | 정식 주소 (Production) |
 | `stagelogic.kr` | `www.stagelogic.kr` 로 308 이동 |
 | `stagelogic.co.kr` | `www.stagelogic.kr` 로 308 이동 |
-| `www.stagelogic.co.kr` | `www.stagelogic.kr` 로 308 이동 |
+| `www.stagelogic.co.kr` | `www.stagelogic.kr` 로 308 이동 (Vercel 화면에서 설정이 막혀 `vercel.json` 에서 처리) |
 
 각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://www.stagelogic.kr` 기준입니다.
 페이지를 새로 만들면 `sitemap.xml` 에도 한 줄 추가해 주세요.
@@ -92,4 +92,4 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 - [ ] 회사 소개의 전문가 소개(이력) — 자료를 받으면 `about/index.html`의 `#people` 구역을 채우고 `hidden`을 지운다
 - [ ] 클래스로직 상표 (42류 유사 상표 'CLASSLOG' 출원 중) — 확정 전까지 "가칭 · 출시 예정" 유지
 - [x] 도메인 구입 (stagelogic.kr, stagelogic.co.kr)
-- [ ] 도메인 연결 (Vercel → Settings → Domains, 위 표대로)
+- [x] 도메인 연결 (Vercel → Settings → Domains, 위 표대로)
