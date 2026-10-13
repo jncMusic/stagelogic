@@ -177,7 +177,7 @@ $("f-area").innerHTML = AREAS.map(([k, n]) => `<option value="${k}">${n}</option
 async function api(method, body) {
   const res = await fetch("/api/checklist", { method, headers: { "Content-Type": "application/json", "x-checklist-pass": pass }, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error(data.error || "error"); e.status = res.status; throw e; }
+  if (!res.ok) { const e = new Error(data.error || "error"); e.status = res.status; e.missing = data.missing || []; throw e; }
   return data;
 }
 function apply(data) { items = data.items || []; render(); }
@@ -224,8 +224,14 @@ function render() {
 
 function fail(err) {
   if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; }
-  $("counts").textContent = err.status === 503 ? "서버 설정이 아직 끝나지 않았습니다." : "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  $("counts").textContent = err.status === 503 ? setupMsg(err) : "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
   refresh();
+}
+// 503일 때 무엇이 빠졌는지 알려 준다
+function setupMsg(err) {
+  const names = { storage: "Blob 저장소 연결", password: "CHECKLIST_PASSWORD" };
+  const m = (err.missing || []).map((k) => names[k] || k);
+  return "서버 설정이 아직 끝나지 않았습니다." + (m.length ? " (빠진 것: " + m.join(", ") + ")" : "");
 }
 async function refresh() { try { apply(await api("GET")); } catch (e) { if (e.status === 401) lock("비밀번호가 맞지 않습니다."); } }
 
@@ -291,7 +297,7 @@ function lock(message) {
 async function unlock(p) {
   pass = p;
   try { apply(await api("GET")); store.set(p); $("login-wrap").hidden = true; $("app").hidden = false; }
-  catch (err) { lock(err.status === 401 ? "비밀번호가 맞지 않습니다." : err.status === 503 ? "서버 설정이 아직 끝나지 않았습니다." : "연결하지 못했습니다. 잠시 후 다시 시도해 주세요."); }
+  catch (err) { lock(err.status === 401 ? "비밀번호가 맞지 않습니다." : err.status === 503 ? setupMsg(err) : "연결하지 못했습니다. 잠시 후 다시 시도해 주세요."); }
 }
 $("login-form").addEventListener("submit", (e) => { e.preventDefault(); unlock($("pass").value); });
 window.addEventListener("focus", () => { if (pass) refresh(); });
