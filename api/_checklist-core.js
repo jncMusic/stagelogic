@@ -34,7 +34,11 @@ export function createHandler(store, env = process.env) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex');
-    if (!store.ready() || !env.CHECKLIST_PASSWORD) return res.status(503).json({ error: 'not_configured' });
+    // 무엇이 빠졌는지 이름만 알려 준다 (값은 내보내지 않는다)
+    const missing = [];
+    if (!store.ready()) missing.push('storage');
+    if (!env.CHECKLIST_PASSWORD) missing.push('password');
+    if (missing.length) return res.status(503).json({ error: 'not_configured', missing });
     if (!authorized(req, env.CHECKLIST_PASSWORD)) return res.status(401).json({ error: 'unauthorized' });
 
     try {
