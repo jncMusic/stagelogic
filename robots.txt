@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /work/
+Disallow: /api/
+
+Sitemap: https://www.stagelogic.kr/sitemap.xml
