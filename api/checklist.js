@@ -1,27 +1,38 @@
 // 사업 점검표 API. 데이터는 Vercel Blob에 JSON 파일로 둔다.
-// 필요한 환경 변수: BLOB_READ_WRITE_TOKEN (Blob 저장소를 프로젝트에 연결하면 자동), CHECKLIST_PASSWORD
-import { put, list, del } from '@vercel/blob';
+// 필요한 환경 변수: CHECKLIST_PASSWORD, 그리고 Blob 저장소 연결로 자동 생기는 값
+// (새 저장소는 BLOB_STORE_ID + OIDC, 예전 저장소는 BLOB_READ_WRITE_TOKEN)
+import { put, list, del, get } from '@vercel/blob';
 import { createHandler } from './_checklist-core.js';
 
 const PREFIX = 'checklist/state';
 
+// 저장소를 만들 때 고른 공개 범위(private/public)에 맞춰야 저장된다.
+// 처음엔 private으로 시도하고, 거절되면 public 저장소로 보고 기억해 둔다.
+let access = 'private';
+const accessOf = (url) => (new URL(url).hostname.includes('.private.') ? 'private' : 'public');
+
 const blobStore = {
-  ready: () => Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+  ready: () => Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN),
   async load() {
     const { blobs } = await list({ prefix: PREFIX });
     blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     if (!blobs.length) return { items: [], versions: [] };
-    const res = await fetch(blobs[0].url, { cache: 'no-store' });
-    const data = await res.json();
+    access = accessOf(blobs[0].url);
+    const res = await get(blobs[0].url, { access, useCache: false });
+    const data = res && res.stream ? await new Response(res.stream).json() : {};
     return { items: Array.isArray(data.items) ? data.items : [], versions: blobs.map((b) => b.url) };
   },
   async save(items, versions, keep) {
+    const body = JSON.stringify({ items, savedAt: new Date().toISOString() });
     // 매번 새 이름으로 저장하므로 CDN 캐시 때문에 옛 내용이 보이는 일이 없다
-    await put(`${PREFIX}.json`, JSON.stringify({ items, savedAt: new Date().toISOString() }), {
-      access: 'public',
-      addRandomSuffix: true,
-      contentType: 'application/json',
-    });
+    const write = (a) => put(`${PREFIX}.json`, body, { access: a, addRandomSuffix: true, contentType: 'application/json' });
+    try {
+      await write(access);
+    } catch (err) {
+      const other = access === 'private' ? 'public' : 'private';
+      await write(other).catch(() => { throw err; });
+      access = other;
+    }
     const stale = versions.slice(keep - 1);
     if (stale.length) await del(stale);
   },

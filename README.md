@@ -80,9 +80,10 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 
 처음 한 번 Vercel 화면에서 설정합니다.
 
-1. 프로젝트 → Storage → Create → **Blob** 을 만들고 `stagelogic` 프로젝트에 연결합니다. (`BLOB_READ_WRITE_TOKEN` 이 자동으로 들어갑니다.)
+1. 프로젝트 → Storage → Create → **Blob** 을 만들고 `stagelogic` 프로젝트에 연결합니다. (연결 정보 `BLOB_STORE_ID` 가 자동으로 들어갑니다. 예전 방식 저장소는 `BLOB_READ_WRITE_TOKEN`.)
 2. 프로젝트 → Settings → Environment Variables 에 `CHECKLIST_PASSWORD` 를 추가합니다.
-3. 다시 배포한 뒤 `/work/` 에서 비밀번호로 열고, 백업 파일(.json)을 불러옵니다.
+   Production 에 체크되어 있어야 정식 주소에서 열립니다.
+3. 다시 배포(Redeploy)한 뒤 `/work/` 에서 비밀번호로 열고, 백업 파일(.json)을 불러옵니다.
 
 ## 게시 전 확인할 것
 
