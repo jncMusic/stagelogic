@@ -23,12 +23,24 @@ function clean(raw) {
   };
 }
 
-function authorized(req, password) {
-  if (!password) return false;
-  const got = Buffer.from(String(req.headers['x-checklist-pass'] || ''));
-  const want = Buffer.from(password);
+function same(given, secret) {
+  if (!secret) return false;
+  const got = Buffer.from(String(given || ''));
+  const want = Buffer.from(secret);
   return got.length === want.length && timingSafeEqual(got, want);
 }
+
+// 사람은 비밀번호(x-checklist-pass)로, Claude는 따로 발급한 토큰(x-checklist-token)으로 연다.
+// 토큰은 CHECKLIST_AGENT_TOKEN 을 지우면 바로 막을 수 있다.
+// 토큰은 x-checklist-token 헤더나 Authorization: Bearer 로 받는다 (클라우드 환경의 네트워크 시크릿이 붙여 줄 수 있게).
+function authorized(req, env) {
+  const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  return same(req.headers['x-checklist-pass'], env.CHECKLIST_PASSWORD)
+    || same(req.headers['x-checklist-token'], env.CHECKLIST_AGENT_TOKEN)
+    || same(bearer, env.CHECKLIST_AGENT_TOKEN);
+}
+
+const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status'];
 
 export function createHandler(store, env = process.env) {
   return async function handler(req, res) {
@@ -39,7 +51,7 @@ export function createHandler(store, env = process.env) {
     if (!store.ready()) missing.push('storage');
     if (!env.CHECKLIST_PASSWORD) missing.push('password');
     if (missing.length) return res.status(503).json({ error: 'not_configured', missing });
-    if (!authorized(req, env.CHECKLIST_PASSWORD)) return res.status(401).json({ error: 'unauthorized' });
+    if (!authorized(req, env)) return res.status(401).json({ error: 'unauthorized' });
 
     try {
       const { items, versions } = await store.load();
@@ -57,10 +69,20 @@ export function createHandler(store, env = process.env) {
           break;
         }
         case 'add': {
-          const item = clean({ ...body.item, id: '', status: 'todo', updatedAt: now });
+          const item = clean({ ...body.item, id: '', updatedAt: now });
           if (!item.title) return res.status(400).json({ error: 'title_required' });
           item.order = Math.max(0, ...items.filter((i) => i.area === item.area).map((i) => i.order || 0)) + 1;
           next = [...items, item];
+          break;
+        }
+        case 'update': {
+          // 제목 · 설명 · 메모 · 담당 · 분야 · 상태를 고친다. 빠진 칸은 그대로 둔다.
+          const cur = items.find((i) => i.id === body.id);
+          if (!cur || !body.fields || typeof body.fields !== 'object') return res.status(400).json({ error: 'bad_request' });
+          const patch = Object.fromEntries(EDITABLE.filter((k) => k in body.fields).map((k) => [k, body.fields[k]]));
+          const item = clean({ ...cur, ...patch, updatedAt: now });
+          if (!item.title) return res.status(400).json({ error: 'title_required' });
+          next = items.map((i) => (i.id === body.id ? item : i));
           break;
         }
         case 'delete': {

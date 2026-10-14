@@ -85,6 +85,19 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
    Production 에 체크되어 있어야 정식 주소에서 열립니다.
 3. 다시 배포(Redeploy)한 뒤 `/work/` 에서 비밀번호로 열고, 백업 파일(.json)을 불러옵니다.
 
+### Claude가 점검표를 고치게 하기
+
+Claude는 비밀번호 대신 따로 발급한 토큰으로 점검표를 읽고 고칩니다. 토큰을 지우면 바로 막힙니다.
+
+1. 긴 무작위 문자열을 하나 만듭니다. (비밀번호 생성기 등)
+2. Vercel → Settings → Environment Variables 에 `CHECKLIST_AGENT_TOKEN` 으로 넣고(Production) 다시 배포합니다.
+3. Claude 클라우드 환경 편집 화면에서
+   - 네트워크 시크릿: 호스트 `www.stagelogic.kr`, `Authorization: Bearer <같은 값>` 으로 추가
+     (시크릿 칸이 없으면 환경 변수 `CHECKLIST_AGENT_TOKEN` 으로)
+   - 네트워크 액세스: 허용 도메인에 `www.stagelogic.kr` 추가. 새 세션부터 적용됩니다.
+
+Claude는 `scripts/checklist.sh` 로 목록 보기, 상태 · 메모 바꾸기, 항목 추가 · 삭제를 합니다.
+
 ## 게시 전 확인할 것
 
 - [x] 대표 전화 · 이메일 (`assets/js/site.js`)
