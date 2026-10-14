@@ -91,8 +91,10 @@ Claude는 비밀번호 대신 따로 발급한 토큰으로 점검표를 읽고 
 
 1. 긴 무작위 문자열을 하나 만듭니다. (비밀번호 생성기 등)
 2. Vercel → Settings → Environment Variables 에 `CHECKLIST_AGENT_TOKEN` 으로 넣고(Production) 다시 배포합니다.
-3. Claude 클라우드 환경 설정(Edit)에 같은 값을 `CHECKLIST_AGENT_TOKEN` 환경 변수로 넣고,
-   Network access 의 Allowed domains 에 `www.stagelogic.kr` 을 더합니다. 새 세션부터 적용됩니다.
+3. Claude 클라우드 환경 편집 화면에서
+   - 네트워크 시크릿: 호스트 `www.stagelogic.kr`, `Authorization: Bearer <같은 값>` 으로 추가
+     (시크릿 칸이 없으면 환경 변수 `CHECKLIST_AGENT_TOKEN` 으로)
+   - 네트워크 액세스: 허용 도메인에 `www.stagelogic.kr` 추가. 새 세션부터 적용됩니다.
 
 Claude는 `scripts/checklist.sh` 로 목록 보기, 상태 · 메모 바꾸기, 항목 추가 · 삭제를 합니다.
 

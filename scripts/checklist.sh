@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Claude가 사업 점검표(/work/)를 읽고 고칠 때 쓰는 명령.
-# 필요한 환경 변수: CHECKLIST_AGENT_TOKEN (Vercel 의 같은 이름 값과 같아야 함)
+# 인증: 환경 변수 CHECKLIST_AGENT_TOKEN 이 있으면 그 값을 보내고,
+#   없으면 클라우드 환경의 네트워크 시크릿이 요청에 토큰을 붙여 준다고 본다.
 #   CHECKLIST_URL 은 생략하면 https://www.stagelogic.kr/api/checklist
 #
 #   scripts/checklist.sh list                        항목 목록 (id · 분야 · 상태 · 담당 · 제목)
@@ -12,15 +13,16 @@
 #   분야: base portfolio stage web academy sales / 담당: 대표 Claude 함께
 set -euo pipefail
 URL="${CHECKLIST_URL:-https://www.stagelogic.kr/api/checklist}"
-: "${CHECKLIST_AGENT_TOKEN:?CHECKLIST_AGENT_TOKEN 이 없습니다}"
+AUTH=()
+[ -n "${CHECKLIST_AGENT_TOKEN:-}" ] && AUTH=(-H "x-checklist-token: $CHECKLIST_AGENT_TOKEN")
 
 call() {
   local out
   if [ "$1" = GET ]; then
-    out=$(curl -sS --fail-with-body -H "x-checklist-token: $CHECKLIST_AGENT_TOKEN" "$URL") || { echo "실패: $out" >&2; exit 1; }
+    out=$(curl -sS --fail-with-body "${AUTH[@]}" "$URL") || { echo "실패: $out" >&2; exit 1; }
   else
     out=$(curl -sS --fail-with-body -X POST -H 'Content-Type: application/json' \
-      -H "x-checklist-token: $CHECKLIST_AGENT_TOKEN" --data "$2" "$URL") || { echo "실패: $out" >&2; exit 1; }
+      "${AUTH[@]}" --data "$2" "$URL") || { echo "실패: $out" >&2; exit 1; }
   fi
   printf '%s' "$out"
 }

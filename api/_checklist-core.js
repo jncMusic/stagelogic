@@ -32,9 +32,12 @@ function same(given, secret) {
 
 // 사람은 비밀번호(x-checklist-pass)로, Claude는 따로 발급한 토큰(x-checklist-token)으로 연다.
 // 토큰은 CHECKLIST_AGENT_TOKEN 을 지우면 바로 막을 수 있다.
+// 토큰은 x-checklist-token 헤더나 Authorization: Bearer 로 받는다 (클라우드 환경의 네트워크 시크릿이 붙여 줄 수 있게).
 function authorized(req, env) {
+  const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   return same(req.headers['x-checklist-pass'], env.CHECKLIST_PASSWORD)
-    || same(req.headers['x-checklist-token'], env.CHECKLIST_AGENT_TOKEN);
+    || same(req.headers['x-checklist-token'], env.CHECKLIST_AGENT_TOKEN)
+    || same(bearer, env.CHECKLIST_AGENT_TOKEN);
 }
 
 const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status'];
