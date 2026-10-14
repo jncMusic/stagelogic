@@ -42,6 +42,12 @@ const blobStore = {
       access = other;
     }
     last = { url: blob.url, items, at: Date.now() };
+    // 다른 서버가 다음 요청을 받아도 새 파일을 보도록, 목록에 나타날 때까지 잠깐 기다린다 (최대 약 6초)
+    for (let i = 0; i < 12; i += 1) {
+      const { blobs } = await list({ prefix: PREFIX });
+      if (blobs.some((b) => b.url === blob.url)) break;
+      await new Promise((r) => setTimeout(r, 500));
+    }
     const stale = versions.slice(keep - 1);
     if (stale.length) await del(stale);
   },
