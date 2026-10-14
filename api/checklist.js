@@ -27,16 +27,20 @@ const blobStore = {
     const { blobs } = await list({ prefix: PREFIX });
     blobs.sort(newestFirst);
     if (last && Date.now() - last.at < 30000 && !blobs.some((b) => b.url === last.url)) {
-      return { items: last.items, versions: [last.url, ...blobs.map((b) => b.url)] };
+      return { ...last.data, versions: [last.url, ...blobs.map((b) => b.url)] };
     }
     if (!blobs.length) return { items: [], versions: [] };
     access = accessOf(blobs[0].url);
     const res = await get(blobs[0].url, { access, useCache: false });
     const data = res && res.stream ? await new Response(res.stream).json() : {};
-    return { items: Array.isArray(data.items) ? data.items : [], versions: blobs.map((b) => b.url) };
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      areas: Array.isArray(data.areas) ? data.areas : undefined,
+      versions: blobs.map((b) => b.url),
+    };
   },
-  async save(items, versions, keep) {
-    const body = JSON.stringify({ items, savedAt: new Date().toISOString() });
+  async save(data, versions, keep) {
+    const body = JSON.stringify({ ...data, savedAt: new Date().toISOString() });
     // 매번 새 이름으로 저장하므로 CDN 캐시 때문에 옛 내용이 보이는 일이 없다
     const seq = String(seqOf(versions[0] || '') + 1).padStart(12, '0');
     let blob;
@@ -48,7 +52,7 @@ const blobStore = {
       await write(other).catch(() => { throw err; });
       access = other;
     }
-    last = { url: blob.url, items, at: Date.now() };
+    last = { url: blob.url, data, at: Date.now() };
     // 다른 서버가 다음 요청을 받아도 새 파일을 보도록, 목록에 나타날 때까지 잠깐 기다린다 (최대 약 6초)
     for (let i = 0; i < 12; i += 1) {
       const { blobs } = await list({ prefix: PREFIX });
