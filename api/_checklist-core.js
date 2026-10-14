@@ -1,24 +1,60 @@
-// 사업 점검표 API의 본체. 저장소(store)를 바깥에서 받아 테스트할 수 있게 둔다.
+// 업무 흐름(사업 점검표) API의 본체. 저장소(store)를 바깥에서 받아 테스트할 수 있게 둔다.
+// 저장 형태: { items: [업무…], areas: [{ key, name }…] }
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 
-const AREAS = new Set(['base', 'portfolio', 'stage', 'web', 'academy', 'sales']);
-const STATUSES = new Set(['todo', 'doing', 'done', 'blocked']);
-const OWNERS = new Set(['대표', 'Claude', '함께']);
+export const DEFAULT_AREAS = [
+  { key: 'base', name: '사업 기반' },
+  { key: 'portfolio', name: '포트폴리오' },
+  { key: 'stage', name: '공연기획' },
+  { key: 'web', name: '홈페이지 제작' },
+  { key: 'academy', name: '학원 솔루션 · 키트' },
+  { key: 'sales', name: '판매 · 마케팅' },
+];
+const STATUSES = ['todo', 'doing', 'blocked', 'done'];
+const STATUS_NAME = { todo: '할 일', doing: '진행 중', blocked: '막힘', done: '완료' };
 const KEEP_VERSIONS = 5; // 저장할 때마다 새 파일을 만들고, 최근 5개만 남긴다
+const MAX_AREAS = 8; // 분야마다 구별되는 색을 하나씩 주기 위해 8개까지
+const MAX_LOG = 30;
+const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
+const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
 
 const text = (v, max) => String(v ?? '').trim().slice(0, max);
+const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
 
-function clean(raw) {
-  const area = AREAS.has(raw.area) ? raw.area : 'base';
+function cleanAreas(raw) {
+  const seen = new Set();
+  const out = [];
+  for (const a of Array.isArray(raw) ? raw : []) {
+    const name = text(a && a.name, 30);
+    let key = text(a && a.key, 24).replace(/[^\w-]/g, '');
+    if (!name) continue;
+    if (!key || seen.has(key)) key = `a${randomUUID().slice(0, 6)}`;
+    seen.add(key);
+    out.push({ key, name });
+    if (out.length >= MAX_AREAS) break;
+  }
+  return out.length ? out : DEFAULT_AREAS.map((a) => ({ ...a }));
+}
+
+function cleanItem(raw, areaKeys) {
+  const id = text(raw.id, 40) || randomUUID().slice(0, 8);
+  const deps = Array.isArray(raw.deps) ? [...new Set(raw.deps.map((d) => text(d, 40)).filter(Boolean))].slice(0, 20) : [];
+  const log = Array.isArray(raw.log)
+    ? raw.log.filter((l) => l && l.at && l.text).slice(-MAX_LOG).map((l) => ({ at: String(l.at), by: text(l.by, 20), text: text(l.text, 200) }))
+    : [];
   return {
-    id: text(raw.id, 40) || randomUUID().slice(0, 8),
-    area,
-    order: Number.isFinite(raw.order) ? raw.order : 0,
-    owner: OWNERS.has(raw.owner) ? raw.owner : '대표',
-    status: STATUSES.has(raw.status) ? raw.status : 'todo',
+    id,
+    area: areaKeys.includes(raw.area) ? raw.area : areaKeys[0],
+    order: Number.isFinite(Number(raw.order)) ? Number(raw.order) : 0,
+    owner: text(raw.owner, 20) || '대표',
+    status: STATUSES.includes(raw.status) ? raw.status : 'todo',
     title: text(raw.title, 120),
-    detail: text(raw.detail, 500),
-    note: text(raw.note, 500),
+    detail: text(raw.detail, 1000),
+    note: text(raw.note, 1000),
+    start: day(raw.start),
+    due: day(raw.due),
+    deps: deps.filter((d) => d !== id),
+    log,
     updatedAt: raw.updatedAt || new Date().toISOString(),
   };
 }
@@ -30,17 +66,22 @@ function same(given, secret) {
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
-// 사람은 비밀번호(x-checklist-pass)로, Claude는 따로 발급한 토큰(x-checklist-token)으로 연다.
-// 토큰은 CHECKLIST_AGENT_TOKEN 을 지우면 바로 막을 수 있다.
+// 사람은 비밀번호(x-checklist-pass)로, Claude는 따로 발급한 토큰으로 연다.
 // 토큰은 x-checklist-token 헤더나 Authorization: Bearer 로 받는다 (클라우드 환경의 네트워크 시크릿이 붙여 줄 수 있게).
-function authorized(req, env) {
-  const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  return same(req.headers['x-checklist-pass'], env.CHECKLIST_PASSWORD)
-    || same(req.headers['x-checklist-token'], env.CHECKLIST_AGENT_TOKEN)
-    || same(bearer, env.CHECKLIST_AGENT_TOKEN);
+// 돌려주는 값은 기록에 남길 이름이다. 사람은 x-checklist-user 로 이름을 보낼 수 있다.
+function whoIs(req, env) {
+  const h = req.headers;
+  if (same(h['x-checklist-pass'], env.CHECKLIST_PASSWORD)) {
+    let name = '';
+    try { name = decodeURIComponent(String(h['x-checklist-user'] || '')); } catch { name = ''; }
+    return text(name, 20) || '대표';
+  }
+  const bearer = String(h.authorization || '').replace(/^Bearer\s+/i, '');
+  if (same(h['x-checklist-token'], env.CHECKLIST_AGENT_TOKEN) || same(bearer, env.CHECKLIST_AGENT_TOKEN)) return 'Claude';
+  return null;
 }
 
-const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status'];
+const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
 
 export function createHandler(store, env = process.env) {
   return async function handler(req, res) {
@@ -51,57 +92,89 @@ export function createHandler(store, env = process.env) {
     if (!store.ready()) missing.push('storage');
     if (!env.CHECKLIST_PASSWORD) missing.push('password');
     if (missing.length) return res.status(503).json({ error: 'not_configured', missing });
-    if (!authorized(req, env)) return res.status(401).json({ error: 'unauthorized' });
+    const me = whoIs(req, env);
+    if (!me) return res.status(401).json({ error: 'unauthorized' });
 
     try {
-      const { items, versions } = await store.load();
-      if (req.method === 'GET') return res.status(200).json({ items });
+      const loaded = await store.load();
+      const areas = cleanAreas(loaded.areas);
+      const keys = areas.map((a) => a.key);
+      const items = (loaded.items || []).map((i) => cleanItem(i, keys));
+      const reply = (data) => res.status(200).json({ ...data, me });
+      if (req.method === 'GET') return reply({ items, areas });
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
       const now = new Date().toISOString();
-      let next;
+      const has = (id) => items.some((i) => i.id === id);
+      let next = items;
+      let nextAreas = areas;
 
       switch (body.op) {
         case 'status': {
-          if (!STATUSES.has(body.status) || !items.some((i) => i.id === body.id)) return res.status(400).json({ error: 'bad_request' });
-          next = items.map((i) => (i.id === body.id ? { ...i, status: body.status, updatedAt: now } : i));
+          if (!STATUSES.includes(body.status) || !has(body.id)) return res.status(400).json({ error: 'bad_request' });
+          next = items.map((i) => (i.id === body.id && i.status !== body.status
+            ? logged({ ...i, status: body.status, updatedAt: now }, me, now, `상태: ${STATUS_NAME[i.status]} → ${STATUS_NAME[body.status]}`)
+            : i));
           break;
         }
         case 'add': {
-          const item = clean({ ...body.item, id: '', updatedAt: now });
+          const raw = body.item || {};
+          const item = cleanItem({ ...raw, id: '', log: [], updatedAt: now }, keys);
           if (!item.title) return res.status(400).json({ error: 'title_required' });
-          item.order = Math.max(0, ...items.filter((i) => i.area === item.area).map((i) => i.order || 0)) + 1;
-          next = [...items, item];
+          item.deps = item.deps.filter(has);
+          if (raw.order === undefined || raw.order === null || raw.order === '') {
+            item.order = Math.max(0, ...items.filter((i) => i.area === item.area).map((i) => i.order || 0)) + 1;
+          }
+          next = [...items, logged(item, me, now, '추가')];
           break;
         }
         case 'update': {
-          // 제목 · 설명 · 메모 · 담당 · 분야 · 상태를 고친다. 빠진 칸은 그대로 둔다.
+          // 제목 · 설명 · 메모 · 담당 · 분야 · 상태 · 날짜 · 선행 업무 · 순서를 고친다. 빠진 칸은 그대로 둔다.
           const cur = items.find((i) => i.id === body.id);
           if (!cur || !body.fields || typeof body.fields !== 'object') return res.status(400).json({ error: 'bad_request' });
           const patch = Object.fromEntries(EDITABLE.filter((k) => k in body.fields).map((k) => [k, body.fields[k]]));
-          const item = clean({ ...cur, ...patch, updatedAt: now });
+          const item = cleanItem({ ...cur, ...patch, id: cur.id, updatedAt: now }, keys);
           if (!item.title) return res.status(400).json({ error: 'title_required' });
-          next = items.map((i) => (i.id === body.id ? item : i));
+          item.deps = item.deps.filter((d) => has(d) && d !== item.id);
+          const changed = EDITABLE.filter((k) => JSON.stringify(item[k]) !== JSON.stringify(cur[k]));
+          if (!changed.length) return reply({ items, areas });
+          const lines = [];
+          if (changed.includes('status')) lines.push(`상태: ${STATUS_NAME[cur.status]} → ${STATUS_NAME[item.status]}`);
+          const rest = changed.filter((k) => k !== 'status' && k !== 'order');
+          if (rest.length) lines.push(`수정: ${rest.map((k) => FIELD_NAME[k]).join(', ')}`);
+          const out = lines.length ? logged(item, me, now, lines.join(' · ')) : item;
+          next = items.map((i) => (i.id === body.id ? out : i));
           break;
         }
         case 'delete': {
-          if (!items.some((i) => i.id === body.id)) return res.status(404).json({ error: 'not_found' });
-          next = items.filter((i) => i.id !== body.id);
+          if (!has(body.id)) return res.status(404).json({ error: 'not_found' });
+          next = items.filter((i) => i.id !== body.id)
+            .map((i) => (i.deps.includes(body.id) ? { ...i, deps: i.deps.filter((d) => d !== body.id) } : i));
+          break;
+        }
+        case 'areas': {
+          // 분야 목록을 통째로 바꾼다 (이름 바꾸기 · 추가 · 순서). 업무가 남은 분야는 지울 수 없다.
+          if (!Array.isArray(body.areas) || !body.areas.length) return res.status(400).json({ error: 'bad_request' });
+          nextAreas = cleanAreas(body.areas);
+          const kept = new Set(nextAreas.map((a) => a.key));
+          if (items.some((i) => !kept.has(i.area))) return res.status(409).json({ error: 'area_in_use' });
           break;
         }
         case 'import': {
           if (items.length) return res.status(409).json({ error: 'not_empty' });
           if (!Array.isArray(body.items) || body.items.length > 500) return res.status(400).json({ error: 'bad_request' });
-          next = body.items.map(clean).filter((i) => i.title);
+          if (Array.isArray(body.areas) && body.areas.length) nextAreas = cleanAreas(body.areas);
+          const k = nextAreas.map((a) => a.key);
+          next = body.items.map((i) => cleanItem(i, k)).filter((i) => i.title);
           break;
         }
         default:
           return res.status(400).json({ error: 'unknown_op' });
       }
 
-      await store.save(next, versions, KEEP_VERSIONS);
-      return res.status(200).json({ items: next });
+      await store.save({ items: next, areas: nextAreas }, loaded.versions || [], KEEP_VERSIONS);
+      return reply({ items: next, areas: nextAreas });
     } catch (err) {
       console.error('checklist api', err);
       return res.status(500).json({ error: 'server_error' });
