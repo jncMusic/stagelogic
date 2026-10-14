@@ -6,6 +6,12 @@ import { createHandler } from './_checklist-core.js';
 
 const PREFIX = 'checklist/state';
 
+// 저장할 때마다 이름에 1씩 늘어나는 번호를 붙인다 (checklist/state-000000000042-xxxx.json).
+// 1초 안에 연달아 저장하면 업로드 시각만으로는 어느 것이 최신인지 가릴 수 없어서다.
+// 번호가 없는 예전 파일은 0번으로 본다.
+const seqOf = (s) => Number((String(s).match(/state-(\d{12})/) || [])[1] || 0);
+const newestFirst = (a, b) => seqOf(b.pathname) - seqOf(a.pathname) || new Date(b.uploadedAt) - new Date(a.uploadedAt);
+
 // 저장소를 만들 때 고른 공개 범위(private/public)에 맞춰야 저장된다.
 // 처음엔 private으로 시도하고, 거절되면 public 저장소로 보고 기억해 둔다.
 let access = 'private';
@@ -19,7 +25,7 @@ const blobStore = {
   ready: () => Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN),
   async load() {
     const { blobs } = await list({ prefix: PREFIX });
-    blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    blobs.sort(newestFirst);
     if (last && Date.now() - last.at < 30000 && !blobs.some((b) => b.url === last.url)) {
       return { items: last.items, versions: [last.url, ...blobs.map((b) => b.url)] };
     }
@@ -32,8 +38,9 @@ const blobStore = {
   async save(items, versions, keep) {
     const body = JSON.stringify({ items, savedAt: new Date().toISOString() });
     // 매번 새 이름으로 저장하므로 CDN 캐시 때문에 옛 내용이 보이는 일이 없다
+    const seq = String(seqOf(versions[0] || '') + 1).padStart(12, '0');
     let blob;
-    const write = async (a) => { blob = await put(`${PREFIX}.json`, body, { access: a, addRandomSuffix: true, contentType: 'application/json' }); };
+    const write = async (a) => { blob = await put(`${PREFIX}-${seq}.json`, body, { access: a, addRandomSuffix: true, contentType: 'application/json' }); };
     try {
       await write(access);
     } catch (err) {
