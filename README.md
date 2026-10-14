@@ -106,6 +106,23 @@ Claude는 비밀번호 대신 따로 발급한 토큰으로 점검표를 읽고 
 
 Claude는 `scripts/checklist.sh` 로 목록 보기, 상태 · 메모 바꾸기, 항목 추가 · 삭제를 합니다.
 
+## 메일 (문의 양식 · 아침 업무 요약)
+
+- 문의 양식은 `/api/contact/` 로 보내져 대표 메일로 들어옵니다. 보낸 분이 이메일을 적었으면 **답장**이 그분께 바로 갑니다.
+  서버 메일 설정 전이거나 실패하면 예전처럼 방문자의 메일 앱을 엽니다.
+- 평일 아침 8시(한국 시각)에 `/api/digest/` 가 업무 흐름 요약(마감 지남 · 오늘 · 3일 안 · 막힘 · 진행 중)을 보냅니다. (`vercel.json` 의 `crons`)
+
+Vercel → Settings → Environment Variables (Production):
+
+| 이름 | 값 |
+| --- | --- |
+| `RESEND_API_KEY` | [Resend](https://resend.com) 에서 발급한 키 |
+| `MAIL_TO` | 받는 주소 (없으면 `stagelogic@naver.com`) |
+| `MAIL_FROM` | 보내는 주소. 도메인 인증 후 `스테이지로직 <hello@stagelogic.kr>` (없으면 Resend 시험 주소 — 이때는 Resend 가입 메일로만 감) |
+| `CRON_SECRET` | 아무 긴 무작위 문자열 (요약 메일 주소를 남이 부르지 못하게) |
+
+도메인 인증: Resend → Domains 에 `stagelogic.kr` 를 추가하면 DNS 레코드 몇 줄이 나옵니다. 카페24 DNS 에 그대로 넣습니다(끝의 점 없이).
+
 ## 게시 전 확인할 것
 
 - [x] 대표 전화 · 이메일 (`assets/js/site.js`)
