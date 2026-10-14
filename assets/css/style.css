@@ -436,3 +436,6 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .venues li { background: #fff; border: 1px solid #e6e1d6; border-radius: 12px; padding: 14px 16px; }
 .venues b { display: block; font-size: 1rem; }
 .venues span { font-size: .85rem; color: #6a6872; }
+
+/* 문의 양식: 자동 입력 봇을 거르는 숨은 칸 */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
