@@ -2,7 +2,7 @@
 # Claude가 사업 점검표(/work/)를 읽고 고칠 때 쓰는 명령.
 # 인증: 환경 변수 CHECKLIST_AGENT_TOKEN 이 있으면 그 값을 보내고,
 #   없으면 클라우드 환경의 네트워크 시크릿이 요청에 토큰을 붙여 준다고 본다.
-#   CHECKLIST_URL 은 생략하면 https://www.stagelogic.kr/api/checklist
+#   CHECKLIST_URL 은 생략하면 https://www.stagelogic.kr/api/checklist/ (끝의 / 필요)
 #
 #   scripts/checklist.sh list                        항목 목록 (id · 분야 · 상태 · 담당 · 제목)
 #   scripts/checklist.sh status <id> <todo|doing|done|blocked>
@@ -12,7 +12,7 @@
 #   scripts/checklist.sh delete <id>
 #   분야: base portfolio stage web academy sales / 담당: 대표 Claude 함께
 set -euo pipefail
-URL="${CHECKLIST_URL:-https://www.stagelogic.kr/api/checklist}"
+URL="${CHECKLIST_URL:-https://www.stagelogic.kr/api/checklist/}"
 AUTH=()
 [ -n "${CHECKLIST_AGENT_TOKEN:-}" ] && AUTH=(-H "x-checklist-token: $CHECKLIST_AGENT_TOKEN")
 
