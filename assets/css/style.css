@@ -439,3 +439,63 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 
 /* 문의 양식: 자동 입력 봇을 거르는 숨은 칸 */
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* 문의: 하고 싶은 일 고르기 */
+.ask-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px; align-items: start; }
+@media (max-width: 960px) { .ask-layout { grid-template-columns: 1fr; } }
+.ask-form { gap: 28px; }
+.ask-step { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 18px; }
+.ask-step[hidden] { display: none; }
+.ask-step > legend { display: flex; align-items: center; gap: 10px; font-size: 1.35rem; font-weight: 800; margin-bottom: 4px; padding: 0; letter-spacing: -0.02em; }
+.ask-step + .ask-step { border-top: 1px solid var(--line); padding-top: 28px; }
+.step-n { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--ink); color: var(--gold); display: grid; place-items: center; font-size: .9rem; }
+.step-hint { color: var(--muted); margin: -8px 0 0; font-size: .95rem; }
+.opt { font-weight: 500; color: var(--muted); font-size: .85em; }
+
+.goal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 560px) { .goal-grid { grid-template-columns: 1fr; } }
+.goal {
+  text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--white); border: 1.5px solid var(--line); border-radius: var(--radius);
+  padding: 18px 18px 16px; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: center;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.goal:hover { border-color: var(--gold); transform: translateY(-1px); }
+.goal:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.goal-icon { grid-row: span 2; font-size: 1.6rem; line-height: 1; }
+.goal b { font-size: 1.05rem; }
+.goal small { color: var(--muted); font-size: .85rem; line-height: 1.45; }
+.goal[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--white); box-shadow: 0 6px 18px rgba(18,19,26,.18); }
+.goal[aria-pressed="true"] small { color: #c9c8d2; }
+#goal-grid:has(.goal[aria-pressed="true"]) .goal[aria-pressed="false"] { opacity: .6; }
+#goal-grid:has(.goal[aria-pressed="true"]) .goal[aria-pressed="false"]:hover { opacity: 1; }
+
+.qbox { border: 0; padding: 0; margin: 0 0 18px; min-width: 0; }
+.qbox:last-child { margin-bottom: 0; }
+.form .q, .qbox > legend { display: block; font-weight: 700; font-size: .98rem; margin-bottom: 10px; padding: 0; }
+.chips-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pick { position: relative; margin: 0 !important; font-weight: 500 !important; cursor: pointer; }
+.pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pick span {
+  display: inline-block; padding: 9px 15px; border-radius: 999px; border: 1.5px solid var(--line);
+  background: var(--white); font-size: .95rem; line-height: 1.3; transition: background .12s, border-color .12s;
+}
+.pick:hover span { border-color: var(--gold); }
+.pick input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pick input:checked + span { background: var(--gold-soft); border-color: var(--gold); color: #5a4515; font-weight: 700; }
+.pick input[type=checkbox]:checked + span::before { content: "✓ "; }
+.chips-pick input[type=date] { width: auto; min-width: 170px; padding: 9px 14px; border-radius: 999px; }
+.btn-send { padding: 16px 32px; font-size: 1.05rem; }
+
+.ask-side { position: sticky; top: 92px; display: grid; gap: 20px; max-height: calc(100vh - 110px); overflow-y: auto; }
+@media (max-width: 960px) { .ask-side { position: static; max-height: none; } }
+.summary { background: var(--ink); color: var(--white); border-radius: var(--radius); padding: 22px 22px 18px; }
+.summary[hidden] { display: none; }
+.summary h2 { font-size: 1.05rem; color: var(--gold); margin-bottom: 12px; }
+.summary dl { margin: 0; display: grid; gap: 10px; }
+.summary dt { font-size: .78rem; color: #a9a8b3; }
+.summary dd { margin: 0; font-weight: 600; font-size: .95rem; }
+.summary-empty { color: #a9a8b3; font-size: .88rem; margin: 6px 0 0; }
+.side-contact h2 { font-size: 1.05rem; }
+.ask-done { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 32px; text-align: center; }
+.ask-done p { color: var(--muted); }
