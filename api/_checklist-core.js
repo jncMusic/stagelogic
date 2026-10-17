@@ -10,16 +10,16 @@ export const DEFAULT_AREAS = [
   { key: 'academy', name: '학원 솔루션 · 키트' },
   { key: 'sales', name: '판매 · 마케팅' },
 ];
-const STATUSES = ['todo', 'doing', 'blocked', 'done'];
-const STATUS_NAME = { todo: '할 일', doing: '진행 중', blocked: '막힘', done: '완료' };
+export const STATUSES = ['todo', 'doing', 'blocked', 'done'];
+export const STATUS_NAME = { todo: '할 일', doing: '진행 중', blocked: '막힘', done: '완료' };
 const KEEP_VERSIONS = 5; // 저장할 때마다 새 파일을 만들고, 최근 5개만 남긴다
 const MAX_AREAS = 8; // 분야마다 구별되는 색을 하나씩 주기 위해 8개까지
-const MAX_LOG = 30;
-const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
-const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
+export const MAX_LOG = 30;
+export const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
+export const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
 
-const text = (v, max) => String(v ?? '').trim().slice(0, max);
-const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+export const text = (v, max) => String(v ?? '').trim().slice(0, max);
+export const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
 
 function cleanAreas(raw) {
   const seen = new Set();
@@ -36,7 +36,7 @@ function cleanAreas(raw) {
   return out.length ? out : DEFAULT_AREAS.map((a) => ({ ...a }));
 }
 
-function cleanItem(raw, areaKeys) {
+export function cleanItem(raw, areaKeys) {
   const id = text(raw.id, 40) || randomUUID().slice(0, 8);
   const deps = Array.isArray(raw.deps) ? [...new Set(raw.deps.map((d) => text(d, 40)).filter(Boolean))].slice(0, 20) : [];
   const log = Array.isArray(raw.log)
@@ -59,7 +59,7 @@ function cleanItem(raw, areaKeys) {
   };
 }
 
-function same(given, secret) {
+export function same(given, secret) {
   if (!secret) return false;
   const got = Buffer.from(String(given || ''));
   const want = Buffer.from(secret);
@@ -81,7 +81,7 @@ function whoIs(req, env) {
   return null;
 }
 
-const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
+export const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
 
 export function createHandler(store, env = process.env) {
   return async function handler(req, res) {

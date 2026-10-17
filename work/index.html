@@ -17,7 +17,7 @@
   --good: #0ca30c; --good-ink: #006300; --good-soft: #e3f4e3;
   --warn: #fab219; --warn-ink: #8a5a00; --warn-soft: #fdf1d6;
   --bad: #d03b3b; --bad-ink: #b02a2a; --bad-soft: #f9e3e3;
-  --a1: #2a78d6; --a2: #eb6834; --a3: #1baf7a; --a4: #eda100; --a5: #e87ba4; --a6: #008300; --a7: #6250d6; --a8: #e34948;
+  --a1: #2a78d6; --a2: #eb6834; --a3: #1baf7a; --a4: #eda100; --a5: #e87ba4; --a6: #008300; --a7: #6250d6; --a8: #e34948; --a9: #96643c;
   --shadow: 0 1px 2px rgba(20,20,10,.06), 0 4px 14px rgba(20,20,10,.06);
   --shadow-lg: 0 12px 40px rgba(20,20,10,.18);
   --font: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -28,7 +28,7 @@
   --fg: #f0efec; --fg-2: #c3c2b7; --fg-3: #8f8e86;
   --accent: #3987e5; --accent-soft: #1b2b40;
   --good-ink: #5fd35f; --good-soft: #17301a; --warn-ink: #fab219; --warn-soft: #3a2e12; --bad-ink: #f07d7d; --bad-soft: #3a1d1d;
-  --a1: #3987e5; --a2: #d95926; --a3: #199e70; --a4: #c98500; --a5: #d55181; --a6: #008300; --a7: #9085e9; --a8: #e66767;
+  --a1: #3987e5; --a2: #d95926; --a3: #199e70; --a4: #c98500; --a5: #d55181; --a6: #008300; --a7: #9085e9; --a8: #e66767; --a9: #b9875e;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.55);
 } }
 :root[data-theme="dark"] {
@@ -37,7 +37,7 @@
   --fg: #f0efec; --fg-2: #c3c2b7; --fg-3: #8f8e86;
   --accent: #3987e5; --accent-soft: #1b2b40;
   --good-ink: #5fd35f; --good-soft: #17301a; --warn-ink: #fab219; --warn-soft: #3a2e12; --bad-ink: #f07d7d; --bad-soft: #3a1d1d;
-  --a1: #3987e5; --a2: #d95926; --a3: #199e70; --a4: #c98500; --a5: #d55181; --a6: #008300; --a7: #9085e9; --a8: #e66767;
+  --a1: #3987e5; --a2: #d95926; --a3: #199e70; --a4: #c98500; --a5: #d55181; --a6: #008300; --a7: #9085e9; --a8: #e66767; --a9: #b9875e;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3); --shadow-lg: 0 12px 40px rgba(0,0,0,.55);
 }
 * { box-sizing: border-box; }
@@ -376,7 +376,14 @@ const ICON = {
   blocked: '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1.2L11 10.4H1Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 4.6v2.6M6 8.6v.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   done: '<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="currentColor"/><path d="M3.6 6.1l1.6 1.6 3.2-3.3" fill="none" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
-const K_PASS = "stagelogic-checklist-pass", K_USER = "stagelogic-user", K_UI = "stagelogic-flow-ui", K_THEME = "stagelogic-theme";
+// 같은 화면을 두 곳에서 쓴다: /work/ = 스테이지로직 업무(Blob), /me/ = J&C · 개인 업무(노션 Action_DB)
+const ME = location.pathname.startsWith("/me");
+const CFG = ME
+  ? { api: "/api/me/", kPass: "stagelogic-me-pass", kUi: "stagelogic-me-ui", brand: "J&C · 개인", sub: "Notion", title: "J&C · 개인 흐름",
+      lock: "대표 개인용입니다. 노션 Action_DB와 이어져 있어, 여기서 고치면 노션에도 바로 반영됩니다.", file: "jnc-me-flow" }
+  : { api: "/api/checklist/", kPass: "stagelogic-checklist-pass", kUi: "stagelogic-flow-ui", brand: "업무 흐름", sub: "StageLogic", title: "업무 흐름 | 스테이지로직",
+      lock: "스테이지로직 내부용입니다. 비밀번호를 넣으면 이 기기에서는 다음부터 자동으로 열립니다.", file: "stagelogic-workflow" };
+const K_PASS = CFG.kPass, K_USER = "stagelogic-user", K_UI = CFG.kUi, K_THEME = "stagelogic-theme";
 const store = {
   get(k, d = "") { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
   set(k, v) { try { v === "" || v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
@@ -422,7 +429,7 @@ const relTime = (iso) => {
 async function api(method, body) {
   const headers = { "Content-Type": "application/json", "x-checklist-pass": pass };
   const name = store.get(K_USER); if (name) headers["x-checklist-user"] = encodeURIComponent(name);
-  const res = await fetch("/api/checklist/", { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(CFG.api, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { const e = new Error(data.error || "error"); e.status = res.status; e.missing = data.missing || []; throw e; }
   return data;
@@ -445,7 +452,7 @@ function send(body, optimistic) {
     } catch (err) {
       pending--; setSync("err");
       if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; }
-      toast(err.message === "area_in_use" ? "업무가 남아 있는 분야는 지울 수 없습니다." : "저장하지 못했습니다. 최신 내용으로 다시 불러옵니다.");
+      toast(err.message === "area_in_use" ? "업무가 남아 있는 분야는 지울 수 없습니다." : err.message === "notion_managed" ? "분야는 노션 Action_DB의 '분야' 선택지에서 바꿔 주세요." : "저장하지 못했습니다. 최신 내용으로 다시 불러옵니다.");
       await refresh();
       return null;
     }
@@ -468,7 +475,13 @@ async function refresh() {
 
 // ───────── 계산 ─────────
 const areaOf = (k) => areas.find((a) => a.key === k) || { key: k, name: k };
-const colorOf = (k) => { const i = areas.findIndex((a) => a.key === k); return i < 0 || i > 7 ? "var(--fg-3)" : `var(--a${i + 1})`; };
+// 노션 분야는 노션에서 고른 색을 따른다
+const NOTION_COLOR = { blue: 1, orange: 2, green: 3, yellow: 4, pink: 5, purple: 7, red: 8, brown: 9 };
+const colorOf = (k) => {
+  const i = areas.findIndex((a) => a.key === k); if (i < 0) return "var(--fg-3)";
+  const c = areas[i].color; if (c) return NOTION_COLOR[c] ? `var(--a${NOTION_COLOR[c]})` : "var(--fg-3)";
+  return i > 8 ? "var(--fg-3)" : `var(--a${i + 1})`;
+};
 const score = (list) => list.length ? list.reduce((s, i) => s + (i.status === "done" ? 1 : i.status === "doing" ? .5 : 0), 0) / list.length : 0;
 const owners = () => [...new Set(["대표", "Claude", "함께", ...items.map((i) => i.owner)].filter(Boolean))];
 function visible() {
@@ -781,7 +794,7 @@ function renderDrawer() {
     </div>
     <div><p class="sec-t">기록</p><ul class="log">${[...it.log].reverse().map((l) => `<li><time>${relTime(l.at)}</time><span><b>${esc(l.by)}</b> · ${esc(l.text)}</span></li>`).join("") || `<li><time></time><span>아직 기록이 없습니다.</span></li>`}</ul></div>
   </div>
-  <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button><span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
+  <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button>${it.url ? `<a class="btn ghost" href="${esc(it.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션에서 열기 ↗</a>` : ""}<span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
   if (active) { const el = d.querySelector(`[data-f="${active}"]`); if (el) { el.focus(); if (el.setSelectionRange && el.type !== "date") { const n = el.value.length; el.setSelectionRange(n, n); } } }
 }
 function chainDown(id) { const out = new Set(), walk = (x) => items.filter((i) => i.deps.includes(x)).forEach((i) => { if (!out.has(i.id)) { out.add(i.id); walk(i.id); } }); walk(id); return out; }
@@ -809,7 +822,7 @@ document.addEventListener("click", (e) => {
   const ud = t.closest("[data-undep]"); if (ud) { const it = items.find((i) => i.id === openId); const deps = it.deps.filter((x) => x !== ud.dataset.undep); send({ op: "update", id: it.id, fields: { deps } }, () => { it.deps = deps; }); return; }
   const del = t.closest("[data-del]");
   if (del) { if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "한 번 더 누르면 삭제"; setTimeout(() => { if (del.isConnected) { del.classList.remove("armed"); del.textContent = "삭제"; } }, 4000); return; }
-    const id = openId; closeDrawer(); send({ op: "delete", id }, () => { items = items.filter((i) => i.id !== id).map((i) => ({ ...i, deps: i.deps.filter((x) => x !== id) })); }); toast("삭제했습니다."); return; }
+    const id = openId; closeDrawer(); send({ op: "delete", id }, () => { items = items.filter((i) => i.id !== id).map((i) => ({ ...i, deps: i.deps.filter((x) => x !== id) })); }); toast(ME ? "노션 휴지통으로 옮겼습니다." : "삭제했습니다."); return; }
   if (t.closest("#new-btn")) { openAdd({}); return; }
   if (t.closest("#menu-btn")) { const p = $("#menu-pop"); p.hidden = !p.hidden; $("#menu-btn").setAttribute("aria-expanded", String(!p.hidden)); return; }
   const act = t.closest("#menu-pop [data-act]"); if (act) { $("#menu-pop").hidden = true; menu(act.dataset.act); return; }
@@ -881,7 +894,7 @@ function menu(act) {
   if (act === "areas") { draftAreas = areas.map((a) => ({ ...a })); $("#areas-msg").textContent = ""; renderAreaRows(); $("#areas-dlg").showModal(); }
   else if (act === "name") { const n = prompt("기록에 남길 이름을 입력하세요. (예: 대표, 김실장)", store.get(K_USER) || me || ""); if (n !== null) { store.set(K_USER, n.trim().slice(0, 20)); toast("이 기기에서 쓰는 이름을 바꿨습니다."); refresh(); } }
   else if (act === "theme") { const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; const next = dark ? "light" : "dark"; document.documentElement.dataset.theme = next; store.set(K_THEME, next); requestAnimationFrame(() => drawLinks()); }
-  else if (act === "export") { const blob = new Blob([JSON.stringify({ items, areas, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `stagelogic-workflow-${TODAY()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+  else if (act === "export") { const blob = new Blob([JSON.stringify({ items, areas, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${CFG.file}-${TODAY()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
   else if (act === "import") { if (items.length) { toast("업무가 하나도 없을 때만 불러올 수 있습니다. 먼저 백업을 내려받아 두세요."); return; } $("#import-file").click(); }
   else if (act === "logout") lock("");
 }
@@ -896,7 +909,7 @@ function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; 
 
 // ───────── 잠금 · 시작 ─────────
 function setupMsg(err) {
-  const names = { storage: "Blob 저장소 연결", password: "CHECKLIST_PASSWORD" };
+  const names = { storage: "Blob 저장소 연결", password: ME ? "ME_PASSWORD" : "CHECKLIST_PASSWORD", notion: "NOTION_TOKEN", notion_share: "노션 통합에 Action_DB 공유" };
   const m = (err.missing || []).map((k) => names[k] || k);
   return "서버 설정이 아직 끝나지 않았습니다." + (m.length ? " (빠진 것: " + m.join(", ") + ")" : "");
 }
@@ -912,6 +925,10 @@ async function unlock(p) {
 $("#login-form").addEventListener("submit", (e) => { e.preventDefault(); unlock($("#pass").value); });
 window.addEventListener("focus", () => { if (pass && !openId) refresh(); });
 setInterval(() => { if (pass && !openId && !document.hidden && !document.querySelector("dialog[open]")) refresh(); }, 60000);
+document.title = CFG.title;
+$(".brand").innerHTML = `<b>${esc(CFG.brand)}</b><span>${esc(CFG.sub)}</span>`;
+$(".lock-card h1").textContent = CFG.brand; $(".lock-card p").textContent = CFG.lock;
+if (ME) $$('#menu-pop [data-act="areas"], #menu-pop [data-act="import"], #menu-pop [data-act="name"]').forEach((b) => { b.hidden = true; });
 const theme = store.get(K_THEME); if (theme) document.documentElement.dataset.theme = theme;
 const saved = store.get(K_PASS); if (saved) unlock(saved); else lock("");
 </script>
