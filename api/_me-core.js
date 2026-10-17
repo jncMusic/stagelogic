@@ -1,11 +1,12 @@
 // J&C · 개인 흐름표 API. 업무 원본은 노션 Action_DB이고, 화면은 /work/ 와 같은 것을 쓴다(/me/).
-// - 노션에 있는 것: 제목(할일 또는 일정), 분야(선택), 상태(시작 · 보류 · 완료 체크), 날짜 · 데드라인
+// - 노션에 있는 것: 제목(할일 또는 일정), 분야(선택), 태그(선택), 상태(시작 · 보류 · 완료 체크), 날짜 · 데드라인
 // - 노션에 칸이 없는 것: 설명 · 메모 · 담당 · 선행 업무 · 순서 · 기록 → Blob(meta)에 업무 id별로 따로 둔다
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
 
-const P = { title: '할일 또는 일정', area: '분야', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
-const NOTION_FIELDS = ['title', 'area', 'status', 'start', 'due'];
+const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
+const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
+const NAME = { ...FIELD_NAME, tag: '태그' };
 const META_FIELDS = ['detail', 'note', 'owner', 'deps', 'order'];
 const DONE_DAYS = 60; // 완료한 업무는 최근 60일 안에 고친 것만 불러온다
 const KEEP_VERSIONS = 5;
@@ -36,6 +37,7 @@ export function fromPage(page, meta = {}) {
     area: pr[P.area]?.select?.id || '',
     status: statusOf(pr),
     title: (pr[P.title]?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)',
+    tag: pr[P.tag]?.select?.name || '',
     start, due,
     detail: meta.detail || '', note: meta.note || '', owner: meta.owner || '대표',
     deps: Array.isArray(meta.deps) ? meta.deps : [],
@@ -52,6 +54,7 @@ function toProps(fields, areas, cur) {
   const out = {};
   if ('title' in fields) out[P.title] = { title: [{ text: { content: fields.title } }] };
   if ('area' in fields) { const a = areas.find((x) => x.key === fields.area); out[P.area] = { select: a ? { name: a.name } : null }; }
+  if ('tag' in fields) out[P.tag] = { select: fields.tag ? { name: fields.tag } : null };
   if ('status' in fields) {
     out[P.doing] = { checkbox: fields.status === 'doing' };
     out[P.blocked] = { checkbox: fields.status === 'blocked' };
@@ -100,11 +103,12 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
       store.load(),
     ]);
     const areas = (db.properties?.[P.area]?.select?.options || []).map((o) => ({ key: o.id, name: o.name, color: o.color }));
+    const tags = (db.properties?.[P.tag]?.select?.options || []).map((o) => ({ name: o.name, color: o.color }));
     const meta = saved.meta || {};
     const items = pages.map((p) => fromPage(p, meta[p.id]));
     const ids = new Set(items.map((i) => i.id));
     items.forEach((i) => { i.deps = i.deps.filter((d) => ids.has(d) && d !== i.id); });
-    return { areas, items, meta, versions: saved.versions || [] };
+    return { areas, tags, items, meta, versions: saved.versions || [] };
   }
 
   return async function handler(req, res) {
@@ -119,9 +123,10 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
     if (!me) return res.status(401).json({ error: 'unauthorized' });
 
     try {
-      const { areas, items, meta, versions } = await loadAll();
+      const { areas, tags, items, meta, versions } = await loadAll();
+      const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
-      const reply = (list) => res.status(200).json({ items: list.map(clean), areas, me });
+      const reply = (list) => res.status(200).json({ items: list.map(clean), areas, tags, me });
       if (req.method === 'GET') return reply(items);
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
@@ -151,7 +156,7 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
           const title = text(raw.title, 120);
           if (!title) return res.status(400).json({ error: 'title_required' });
           const fields = {
-            title, area: keys.includes(raw.area) ? raw.area : keys[0],
+            title, area: keys.includes(raw.area) ? raw.area : keys[0], tag: tagNames.includes(raw.tag) ? raw.tag : '',
             status: STATUSES.includes(raw.status) ? raw.status : 'todo', start: okDay(raw.start), due: okDay(raw.due),
           };
           const page = await notion.create(dbId, toProps(fields, areas, null));
@@ -174,6 +179,7 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
           if ('title' in f) want.title = text(f.title, 120);
           if (!want.title) return res.status(400).json({ error: 'title_required' });
           if ('area' in f && keys.includes(f.area)) want.area = f.area;
+          if ('tag' in f && (f.tag === '' || tagNames.includes(f.tag))) want.tag = f.tag;
           if ('status' in f && STATUSES.includes(f.status)) want.status = f.status;
           if ('start' in f) want.start = okDay(f.start);
           if ('due' in f) want.due = okDay(f.due);
@@ -189,7 +195,7 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
           const lines = [];
           if (changed.includes('status')) lines.push(`상태: ${STATUS_NAME[cur.status]} → ${STATUS_NAME[want.status]}`);
           const rest = changed.filter((k) => k !== 'status' && k !== 'order');
-          if (rest.length) lines.push(`수정: ${rest.map((k) => FIELD_NAME[k]).join(', ')}`);
+          if (rest.length) lines.push(`수정: ${rest.map((k) => NAME[k]).join(', ')}`);
           const it = lines.length ? logged({ ...want, updatedAt: now }, me, now, lines.join(' · ')) : { ...want, updatedAt: now };
           putMeta(it);
           next = items.map((i) => (i.id === it.id ? it : i));
