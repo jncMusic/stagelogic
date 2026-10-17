@@ -339,7 +339,8 @@ dialog::backdrop { background: rgba(0,0,0,.3); }
     <label class="field">업무 이름<input class="input" name="title" required maxlength="120" placeholder="예: 신년음악회 제안서 보내기"></label>
     <div class="grid2">
       <label class="field">분야<select class="input" name="area"></select></label>
-      <label class="field">담당<input class="input" name="owner" list="owners" maxlength="20"></label>
+      <label class="field" id="add-owner">담당<input class="input" name="owner" list="owners" maxlength="20"></label>
+      <label class="field" id="add-tag" hidden>태그<select class="input" name="tag"></select></label>
       <label class="field">단계<select class="input" name="status"><option value="todo">할 일</option><option value="doing">진행 중</option><option value="blocked">막힘</option><option value="done">완료</option></select></label>
       <label class="field">마감일<input class="input" name="due" type="date"></label>
     </div>
@@ -395,9 +396,10 @@ const stTag = (k) => `<span class="st ${k}">${ICON[k]}${SNAME[k]}</span>`;
 
 // ───────── 상태 ─────────
 let pass = "", me = "";
-let items = [], areas = [];
-let ui = { view: "flow", areas: [], owners: [], statuses: [], hideDone: false, q: "", links: true, zoom: "week", sort: ["due", 1] };
+let items = [], areas = [], tags = []; // tags: /me/ 에서만 (노션 '태그' 선택지)
+let ui = { view: "flow", areas: [], tags: [], owners: [], statuses: [], hideDone: false, q: "", links: true, zoom: "week", sort: ["due", 1] };
 try { Object.assign(ui, JSON.parse(store.get(K_UI, "{}"))); } catch {}
+if (!Array.isArray(ui.tags)) ui.tags = [];
 ui.q = "";
 const saveUi = () => store.set(K_UI, JSON.stringify({ ...ui, q: "" }));
 let openId = null;
@@ -462,7 +464,7 @@ function send(body, optimistic) {
 }
 function take(data) {
   if (!data) return;
-  items = data.items || []; areas = data.areas || areas; me = data.me || me;
+  items = data.items || []; areas = data.areas || areas; tags = data.tags || tags; me = data.me || me;
   // 아직 보내지 않은 입력은 화면에서 지키기
   const open = items.find((i) => i.id === openId); if (open) Object.assign(open, editPatch);
   render();
@@ -488,10 +490,11 @@ function visible() {
   const q = ui.q.trim().toLowerCase();
   return items.filter((i) =>
     (!ui.areas.length || ui.areas.includes(i.area)) &&
+    (!ui.tags.length || ui.tags.includes(i.tag)) &&
     (!ui.owners.length || ui.owners.includes(i.owner)) &&
     (!ui.statuses.length || ui.statuses.includes(i.status)) &&
     (!ui.hideDone || i.status !== "done") &&
-    (!q || `${i.title} ${i.detail} ${i.note} ${i.owner}`.toLowerCase().includes(q)));
+    (!q || `${i.title} ${i.detail} ${i.note} ${i.owner} ${i.tag || ""}`.toLowerCase().includes(q)));
 }
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title, "ko");
 function orderBetween(prev, next) {
@@ -530,8 +533,10 @@ function chip(group, value, label, color) {
 }
 function renderFilters() {
   const f = $("#filters");
-  const any = ui.areas.length || ui.owners.length || ui.statuses.length || ui.hideDone;
+  const any = ui.areas.length || ui.tags.length || ui.owners.length || ui.statuses.length || ui.hideDone;
+  const usedTags = tags.filter((t) => items.some((i) => i.tag === t.name));
   f.innerHTML = areas.map((a) => chip("areas", a.key, a.name, colorOf(a.key))).join("") +
+    (usedTags.length ? `<span class="sep"></span>` + usedTags.map((t) => chip("tags", t.name, "#" + t.name)).join("") : "") +
     `<span class="sep"></span>` + owners().filter((o) => items.some((i) => i.owner === o)).map((o) => chip("owners", o, o)).join("") +
     `<span class="sep"></span>` + STATUS.map((s) => chip("statuses", s.key, s.name)).join("") +
     `<button type="button" class="chip" data-g="hideDone" aria-pressed="${ui.hideDone}">완료 숨기기</button>` +
@@ -571,6 +576,7 @@ function card(it, opts = {}) {
     <div class="c-meta">${opts.status ? stTag(it.status) : (it.status === "blocked" ? stTag("blocked") : "")}
       <span class="who${isClaude ? " claude" : ""}"><i>${esc((it.owner || "?").slice(0, 1))}</i>${esc(it.owner)}</span>
       ${dueTag(it)}
+      ${it.tag ? `<span class="tag">#${esc(it.tag)}</span>` : ""}
       ${deps ? `<span class="tag" title="선행 업무 ${deps}개${waiting ? `, ${waiting}개 대기` : ""}">← ${deps}${waiting ? " 대기" : ""}</span>` : ""}
       ${after ? `<span class="tag" title="이 일을 기다리는 업무 ${after}개">→ ${after}</span>` : ""}
     </div>
@@ -780,7 +786,8 @@ function renderDrawer() {
     <div class="seg" role="group" aria-label="단계">${STATUS.map((s) => `<button type="button" data-st="${s.key}" aria-pressed="${it.status === s.key}">${ICON[s.key]}${s.name}</button>`).join("")}</div>
     <div class="grid2">
       <label class="field">분야<select class="input" data-f="area">${areas.map((a) => `<option value="${a.key}" ${a.key === it.area ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select></label>
-      <label class="field">담당<input class="input" data-f="owner" list="owners" value="${esc(it.owner)}" maxlength="20"></label>
+      ${tags.length ? `<label class="field">태그<select class="input" data-f="tag"><option value="">없음</option>${tags.map((t) => `<option value="${esc(t.name)}" ${t.name === it.tag ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>`
+        : `<label class="field">담당<input class="input" data-f="owner" list="owners" value="${esc(it.owner)}" maxlength="20"></label>`}
       <label class="field">시작일<input class="input" type="date" data-f="start" value="${it.start}"></label>
       <label class="field">마감일<input class="input" type="date" data-f="due" value="${it.due}"></label>
     </div>
@@ -808,7 +815,7 @@ document.addEventListener("click", (e) => {
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
   const ch = t.closest("#filters [data-g]");
   if (ch) { const g = ch.dataset.g;
-    if (g === "clear") Object.assign(ui, { areas: [], owners: [], statuses: [], hideDone: false });
+    if (g === "clear") Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false });
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
     else { const v = ch.dataset.v; ui[g] = ui[g].includes(v) ? ui[g].filter((x) => x !== v) : [...ui[g], v]; }
     saveUi(); render(); return; }
@@ -860,11 +867,14 @@ function openAdd(preset) {
   f.area.innerHTML = areas.map((a) => `<option value="${a.key}">${esc(a.name)}</option>`).join("");
   f.reset(); f.area.value = preset.area || (ui.areas[0] || areas[0].key); f.status.value = preset.status || "todo";
   f.owner.value = store.get(K_USER) || me || "대표"; $("#add-msg").textContent = "";
+  $("#add-tag").hidden = !tags.length; $("#add-owner").hidden = Boolean(tags.length);
+  f.tag.innerHTML = `<option value="">없음</option>` + tags.map((t) => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
   $("#add-dlg").showModal(); f.title.focus();
 }
 $("#add-form").addEventListener("submit", (e) => {
   e.preventDefault(); const f = e.target, title = f.title.value.trim(); if (!title) return;
   const item = { title, area: f.area.value, owner: f.owner.value.trim() || "대표", status: f.status.value, due: f.due.value, detail: f.detail.value.trim() };
+  if (tags.length) item.tag = f.tag.value;
   $("#add-dlg").close();
   send({ op: "add", item }, () => { items.push({ ...item, id: "tmp-" + Date.now(), order: 1e9, note: "", start: "", deps: [], log: [], updatedAt: new Date().toISOString() }); });
   toast(`‘${title}’을(를) 추가했습니다.`);
