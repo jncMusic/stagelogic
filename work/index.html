@@ -221,6 +221,19 @@ td .area i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); 
 select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76rem; font-weight: 700; appearance: none; }
 
 /* 빈 화면 */
+.a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+.a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.a-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.a-card h3 { margin: 0; font-size: 1.02rem; } .a-card h3 a, .g-main a { color: inherit; text-decoration: none; } .a-card h3 a:hover, .g-main a:hover { text-decoration: underline; }
+.a-card .sec-t { margin: 8px 0 2px; } .a-card .sec-t b { color: var(--fg-3); font-weight: 600; margin-left: 4px; }
+.g-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.g-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 5px 0; border-top: 1px solid var(--line); }
+.g-check { width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; border: 1.6px solid var(--fg-3); background: none; padding: 0; cursor: pointer; }
+.g-check:hover { border-color: var(--fg); background: var(--surface-2); }
+.g-main { min-width: 0; font-size: .9rem; } .g-meta { display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: .75rem; color: var(--fg-3); flex-wrap: wrap; }
+.g-prog { width: 60px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; display: inline-block; } .g-prog i { display: block; height: 100%; background: var(--a3); }
+.g-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-top: 8px; } .g-add .input { padding: 6px 8px; font-size: .85rem; min-width: 0; }
+.g-add [name="title"] { grid-column: 1 / -1; }
 .empty { border: 1px dashed var(--line-2); border-radius: 14px; padding: 36px; text-align: center; color: var(--fg-2); background: var(--surface); }
 
 /* 상세 서랍 */
@@ -428,10 +441,10 @@ const relTime = (iso) => {
 };
 
 // ───────── 서버 ─────────
-async function api(method, body) {
+async function api(method, body, url = CFG.api) {
   const headers = { "Content-Type": "application/json", "x-checklist-pass": pass };
   const name = store.get(K_USER); if (name) headers["x-checklist-user"] = encodeURIComponent(name);
-  const res = await fetch(CFG.api, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { const e = new Error(data.error || "error"); e.status = res.status; e.missing = data.missing || []; throw e; }
   return data;
@@ -510,8 +523,11 @@ function render() {
   const v = $("#view");
   const scroll = { x: lastView === ui.view ? (v.querySelector(".flow-wrap, .tl, .board, .table-wrap")?.scrollLeft || 0) : null };
   v.innerHTML = "";
-  if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
-  else ({ flow: renderFlow, board: renderBoard, time: renderTime, list: renderList })[ui.view](v);
+  const onAreas = ME && ui.view === "areas";
+  ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas; });
+  if (onAreas) renderAreas(v);
+  else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
+  else ({ flow: renderFlow, board: renderBoard, time: renderTime, list: renderList }[ui.view] || renderFlow)(v);
   const sc = v.querySelector(".flow-wrap, .tl, .board, .table-wrap"); if (sc && scroll.x !== null) sc.scrollLeft = scroll.x;
   $$("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === ui.view)));
   $("#owners").innerHTML = owners().map((o) => `<option value="${esc(o)}">`).join("");
@@ -861,6 +877,67 @@ document.addEventListener("keydown", (e) => {
 });
 window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); });
 
+// ───────── 영역 현황판 (/me/ 전용) ─────────
+// 노션 Areas of Responsibility → GTD System(프로젝트 · 다음 행동 …) → Action_DB 할 일 진행
+let board = null, boardAt = 0, boardBusy = false;
+async function loadBoard(force) {
+  if (boardBusy || (!force && board && Date.now() - boardAt < 30000)) return;
+  boardBusy = true;
+  try { board = await api("GET", null, CFG.api + "?scope=areas"); boardAt = Date.now(); }
+  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } toast("영역을 불러오지 못했습니다."); }
+  finally { boardBusy = false; }
+  if (ui.view === "areas") render();
+}
+async function boardOp(body, optimistic) {
+  if (optimistic) { optimistic(); render(); }
+  setSync("busy");
+  try { board = await api("POST", body); boardAt = Date.now(); setSync("ok"); }
+  catch { setSync("err"); toast("저장하지 못했습니다. 다시 불러옵니다."); await loadBoard(true); }
+  if (ui.view === "areas") render();
+}
+function gtdRow(g) {
+  const a = g.actions, pct = a.total ? Math.round(a.done / a.total * 100) : 0;
+  const over = g.due && g.due < TODAY();
+  return `<li class="g-row">
+    <button type="button" class="g-check" data-gdone="${esc(g.id)}" aria-label="완료로 표시: ${esc(g.title)}"></button>
+    <div class="g-main"><a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.title)}</a>
+      <div class="g-meta">${g.priority ? `<span class="tag">${esc(g.priority)}</span>` : ""}${g.due ? `<span class="tag${over ? " over" : ""}">${shortDay(g.due)}${over ? " 지남" : ""}</span>` : ""}
+      ${a.total ? `<span class="g-prog" title="이어진 할 일 ${a.done}/${a.total}"><i style="width:${pct}%"></i></span><span class="mono">${a.done}/${a.total}</span>` : ""}</div></div></li>`;
+}
+function areaCard(a, lists) {
+  const groups = lists.map((l) => ({ l, xs: a.items.filter((g) => g.listId === l.id) })).filter((x) => x.xs.length);
+  const other = a.items.filter((g) => !lists.some((l) => l.id === g.listId));
+  if (other.length) groups.push({ l: { id: "", name: "분류 없음" }, xs: other });
+  const projects = a.items.filter((g) => /project/i.test(g.list)).length;
+  return `<section class="a-card"${a.id ? ` data-area-card="${esc(a.id)}"` : ""}>
+    <header><h3>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a>` : esc(a.name)}</h3>
+      <span class="msg">${projects ? `프로젝트 ${projects} · ` : ""}열린 항목 ${a.items.length}</span></header>
+    ${groups.length ? groups.map(({ l, xs }) => `<p class="sec-t">${esc(l.name)} <b>${xs.length}</b></p><ul class="g-list">${xs.map(gtdRow).join("")}</ul>`).join("") : `<p class="msg">열린 항목이 없습니다.</p>`}
+    ${a.id ? `<form class="g-add" data-garea="${esc(a.id)}"><input class="input" name="title" maxlength="120" placeholder="+ 이 영역에 추가" aria-label="새 항목 이름">
+      <select class="input" name="list" aria-label="종류">${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select>
+      <input class="input" type="date" name="due" aria-label="마감일"><button class="btn" type="submit">추가</button></form>` : ""}
+  </section>`;
+}
+function renderAreas(v) {
+  if (!board) { v.innerHTML = `<div class="empty"><p>노션에서 영역을 불러오는 중…</p></div>`; loadBoard(); return; }
+  loadBoard();
+  const cards = board.areas.map((a) => areaCard(a, board.lists));
+  if (board.noArea.length) cards.push(areaCard({ id: "", name: "영역 없음", url: "", items: board.noArea }, board.lists));
+  v.innerHTML = `<p class="msg" style="margin:0 0 12px">노션 Areas of Responsibility 기준입니다. 동그라미를 누르면 GTD System에서 완료로 바뀌고, 이름을 누르면 노션이 열립니다.</p><div class="a-grid">${cards.join("")}</div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-gdone]"); if (!b || !board) return;
+  const id = b.dataset.gdone;
+  boardOp({ op: "gtd-done", id, done: true }, () => { board.areas.forEach((a) => { a.items = a.items.filter((g) => g.id !== id); }); board.noArea = board.noArea.filter((g) => g.id !== id); });
+  toast("완료로 표시했습니다.");
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest(".g-add"); if (!f) return;
+  e.preventDefault(); const title = f.title.value.trim(); if (!title) return;
+  boardOp({ op: "gtd-add", area: f.dataset.garea, title, list: f.list.value, due: f.due.value });
+  toast(`‘${title}’을(를) 추가했습니다.`);
+});
+
 // 새 업무
 function openAdd(preset) {
   const f = $("#add-form");
@@ -938,6 +1015,8 @@ setInterval(() => { if (pass && !openId && !document.hidden && !document.querySe
 document.title = CFG.title;
 $(".brand").innerHTML = `<b>${esc(CFG.brand)}</b><span>${esc(CFG.sub)}</span>`;
 $(".lock-card h1").textContent = CFG.brand; $(".lock-card p").textContent = CFG.lock;
+if (ME) $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>');
+else if (ui.view === "areas") ui.view = "flow";
 if (ME) $$('#menu-pop [data-act="areas"], #menu-pop [data-act="import"], #menu-pop [data-act="name"]').forEach((b) => { b.hidden = true; });
 const theme = store.get(K_THEME); if (theme) document.documentElement.dataset.theme = theme;
 const saved = store.get(K_PASS); if (saved) unlock(saved); else lock("");
