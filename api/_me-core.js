@@ -3,6 +3,7 @@
 // - 노션에 칸이 없는 것: 설명 · 메모 · 담당 · 선행 업무 · 순서 · 기록 → Blob(meta)에 업무 id별로 따로 둔다
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
+import { loadAreaBoard, areaOp } from './_me-areas.js';
 
 const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
 const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
@@ -123,6 +124,18 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
     if (!me) return res.status(401).json({ error: 'unauthorized' });
 
     try {
+      // 영역 현황판 (/api/me/?scope=areas, 또는 op가 gtd-로 시작)
+      const body0 = req.method === 'POST' ? (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})) : {};
+      const scope = String(req.query?.scope || new URL(req.url || '/', 'http://x').searchParams.get('scope') || '');
+      if ((req.method === 'GET' && scope === 'areas') || String(body0.op || '').startsWith('gtd-')) {
+        let board = await loadAreaBoard(notion, dbId);
+        if (req.method === 'POST') {
+          const err = await areaOp(notion, body0, board);
+          if (err) return res.status(400).json({ error: err });
+          board = await loadAreaBoard(notion, dbId);
+        }
+        return res.status(200).json({ ...board, me });
+      }
       const { areas, tags, items, meta, versions } = await loadAll();
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);

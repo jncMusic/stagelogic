@@ -117,6 +117,7 @@ Claude는 `scripts/checklist.sh` 로 목록 보기, 상태 · 메모 바꾸기, 
 - **날짜** = `날짜`(기간이면 시작~마감, 하루면 그날이 마감), `데드라인`을 쓰던 업무는 마감일이 `데드라인`으로 감
 - 설명 · 메모 · 담당 · 선행 업무 · 기록은 노션에 칸이 없어서 Blob(`me/meta-…`)에 업무별로 저장
 - 삭제하면 노션 휴지통으로 이동 (30일 안에 되살릴 수 있음)
+- **영역** 탭 = 노션 Areas of Responsibility별로 끝나지 않은 GTD System 항목(Projects · Next actions · Waiting for …, Reference 제외)과 이어진 할 일 진행을 보여 줌. 동그라미 = 완료 체크, 카드 아래에서 새 항목 추가. 노션 연결이 David's Workstation 전체에 있어야 함
 
 처음 한 번 설정:
 
