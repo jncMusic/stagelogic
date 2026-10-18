@@ -8,28 +8,30 @@ export const GTD_IDS = {
 };
 const G = { title: 'Action', done: '완료', due: 'Due date', list: 'GTD', area: 'Related Area', priority: 'Priority' };
 const HIDE_LISTS = ['Reference']; // 자료는 할 일이 아니라서 현황판에서 뺀다
-const LIST_ORDER = ['Projects', 'Project', 'Next actions', 'Next action', 'Waiting for', 'Reminders', 'Reminder', 'Someday/Maybe', 'Someday'];
+const LIST_ORDER = ['Projects', 'Project', 'Next actions', 'Next action', 'Waiting for', 'Reminders', 'Reminder', 'Someday / Maybe', 'Someday/Maybe', 'Someday', 'Reference'];
 const DONE_DAYS = 60;
 
 const plain = (arr) => (arr || []).map((t) => t.plain_text).join('').trim();
 const ids = (rel) => (rel?.relation || []).map((r) => r.id);
 const listRank = (name) => { const i = LIST_ORDER.findIndex((n) => n.toLowerCase() === String(name).toLowerCase()); return i < 0 ? 99 : i; };
 
-export async function loadAreaBoard(notion, actionDb) {
+// opts.done: 완료한 항목도 (done: true 로 표시), opts.refs: Reference(자료)도 (제목 · 링크만)
+export async function loadAreaBoard(notion, actionDb, opts = {}) {
   const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
+  const hide = opts.refs ? [] : HIDE_LISTS;
   const [areaPages, listPages, gtdPages, actions] = await Promise.all([
     notion.queryAll(GTD_IDS.areas),
     notion.queryAll(GTD_IDS.lists),
-    notion.queryAll(GTD_IDS.gtd, { property: G.done, checkbox: { equals: false } }),
+    notion.queryAll(GTD_IDS.gtd, opts.done ? undefined : { property: G.done, checkbox: { equals: false } }),
     notion.queryAll(actionDb, {
       and: [
         { property: 'GTD System', relation: { is_not_empty: true } },
-        { or: [{ property: '완료', checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] },
+        ...(opts.done ? [] : [{ or: [{ property: '완료', checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] }]),
       ],
     }),
   ]);
   const titleOf = (p) => plain(Object.values(p.properties || {}).find((v) => v.type === 'title')?.title);
-  const lists = listPages.map((p) => ({ id: p.id, name: titleOf(p) })).filter((l) => l.name && !HIDE_LISTS.includes(l.name))
+  const lists = listPages.map((p) => ({ id: p.id, name: titleOf(p) })).filter((l) => l.name && !hide.includes(l.name))
     .sort((a, b) => listRank(a.name) - listRank(b.name) || a.name.localeCompare(b.name));
   const listName = Object.fromEntries(listPages.map((p) => [p.id, titleOf(p)]));
   // 할 일 진행: GTD 항목 id → { total, done }
@@ -49,9 +51,11 @@ export async function loadAreaBoard(notion, actionDb) {
       id: p.id, url: p.url, title: plain(pr[G.title]?.title) || '(제목 없음)',
       due: String(pr[G.due]?.date?.start || '').slice(0, 10), priority: pr[G.priority]?.select?.name || '',
       listId, list: listName[listId] || '', areas: ids(pr[G.area]), actions: prog[p.id] || { total: 0, done: 0 },
+      done: Boolean(pr[G.done]?.checkbox), ref: HIDE_LISTS.includes(listName[listId] || ''),
     };
-  }).filter((i) => !HIDE_LISTS.includes(i.list))
-    .sort((a, b) => listRank(a.list) - listRank(b.list) || (a.due || '9999').localeCompare(b.due || '9999') || a.title.localeCompare(b.title));
+  }).filter((i) => !hide.includes(i.list))
+    // 끝나지 않은 것 먼저, 그다음 종류 · 마감 순
+    .sort((a, b) => a.done - b.done || listRank(a.list) - listRank(b.list) || (a.due || '9999').localeCompare(b.due || '9999') || a.title.localeCompare(b.title));
   const areas = areaPages.map((p) => ({ id: p.id, url: p.url, name: titleOf(p) || '(이름 없음)' }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const known = new Set(areas.map((a) => a.id));

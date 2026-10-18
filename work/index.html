@@ -230,6 +230,10 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .g-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 5px 0; border-top: 1px solid var(--line); }
 .g-check { width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; border: 1.6px solid var(--fg-3); background: none; padding: 0; cursor: pointer; }
 .g-check:hover { border-color: var(--fg); background: var(--surface-2); }
+.g-check.is-done { background: var(--a3); border-color: var(--a3); color: #fff; font-size: 10px; line-height: 13px; font-weight: 800; }
+.g-row.done .g-main a { color: var(--fg-3); text-decoration: line-through; }
+.g-ref { width: 16px; text-align: center; color: var(--fg-3); font-size: 12px; line-height: 22px; }
+.a-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; } .a-bar .msg { flex: 1 1 260px; }
 .g-main { min-width: 0; font-size: .9rem; } .g-meta { display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: .75rem; color: var(--fg-3); flex-wrap: wrap; }
 .g-prog { width: 60px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; display: inline-block; } .g-prog i { display: block; height: 100%; background: var(--a3); }
 .g-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-top: 8px; } .g-add .input { padding: 6px 8px; font-size: .85rem; min-width: 0; }
@@ -441,7 +445,9 @@ const relTime = (iso) => {
 };
 
 // ───────── 서버 ─────────
-async function api(method, body, url = CFG.api) {
+// /me/ 에서 '오래된 완료 포함'을 켜면 60일 넘은 완료 업무까지 불러온다
+const taskUrl = () => CFG.api + (ME && ui.allDone ? "?all=1" : "");
+async function api(method, body, url = taskUrl()) {
   const headers = { "Content-Type": "application/json", "x-checklist-pass": pass };
   const name = store.get(K_USER); if (name) headers["x-checklist-user"] = encodeURIComponent(name);
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -556,6 +562,7 @@ function renderFilters() {
     `<span class="sep"></span>` + owners().filter((o) => items.some((i) => i.owner === o)).map((o) => chip("owners", o, o)).join("") +
     `<span class="sep"></span>` + STATUS.map((s) => chip("statuses", s.key, s.name)).join("") +
     `<button type="button" class="chip" data-g="hideDone" aria-pressed="${ui.hideDone}">완료 숨기기</button>` +
+    (ME ? `<button type="button" class="chip" data-g="allDone" aria-pressed="${!!ui.allDone}" title="기본은 최근 60일 안에 끝낸 업무만 보입니다">오래된 완료 포함</button>` : "") +
     (any ? `<button type="button" class="clear" data-g="clear">필터 지우기</button>` : "");
 }
 function renderSummary() {
@@ -833,6 +840,7 @@ document.addEventListener("click", (e) => {
   if (ch) { const g = ch.dataset.g;
     if (g === "clear") Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false });
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
+    else if (g === "allDone") { ui.allDone = !ui.allDone; saveUi(); refresh(); return; }
     else { const v = ch.dataset.v; ui[g] = ui[g].includes(v) ? ui[g].filter((x) => x !== v) : [...ui[g], v]; }
     saveUi(); render(); return; }
   const sc = t.closest(".sum-card"); if (sc) { const k = sc.dataset.area; ui.areas = ui.areas.length === 1 && ui.areas[0] === k ? [] : [k]; saveUi(); render(); return; }
@@ -880,10 +888,11 @@ window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); }
 // ───────── 영역 현황판 (/me/ 전용) ─────────
 // 노션 Areas of Responsibility → GTD System(프로젝트 · 다음 행동 …) → Action_DB 할 일 진행
 let board = null, boardAt = 0, boardBusy = false;
+const boardUrl = () => `${CFG.api}?scope=areas${ui.boardDone ? "&done=1" : ""}${ui.boardRefs ? "&refs=1" : ""}`;
 async function loadBoard(force) {
   if (boardBusy || (!force && board && Date.now() - boardAt < 30000)) return;
   boardBusy = true;
-  try { board = await api("GET", null, CFG.api + "?scope=areas"); boardAt = Date.now(); }
+  try { board = await api("GET", null, boardUrl()); boardAt = Date.now(); }
   catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } toast("영역을 불러오지 못했습니다."); }
   finally { boardBusy = false; }
   if (ui.view === "areas") render();
@@ -891,15 +900,18 @@ async function loadBoard(force) {
 async function boardOp(body, optimistic) {
   if (optimistic) { optimistic(); render(); }
   setSync("busy");
-  try { board = await api("POST", body); boardAt = Date.now(); setSync("ok"); }
+  try { board = await api("POST", body, boardUrl()); boardAt = Date.now(); setSync("ok"); }
   catch { setSync("err"); toast("저장하지 못했습니다. 다시 불러옵니다."); await loadBoard(true); }
   if (ui.view === "areas") render();
 }
 function gtdRow(g) {
   const a = g.actions, pct = a.total ? Math.round(a.done / a.total * 100) : 0;
-  const over = g.due && g.due < TODAY();
-  return `<li class="g-row">
-    <button type="button" class="g-check" data-gdone="${esc(g.id)}" aria-label="완료로 표시: ${esc(g.title)}"></button>
+  const over = !g.done && g.due && g.due < TODAY();
+  const mark = g.ref ? `<span class="g-ref" aria-hidden="true">▤</span>`
+    : g.done ? `<button type="button" class="g-check is-done" data-gundo="${esc(g.id)}" aria-label="완료 풀기: ${esc(g.title)}" title="누르면 완료가 풀립니다">✓</button>`
+    : `<button type="button" class="g-check" data-gdone="${esc(g.id)}" aria-label="완료로 표시: ${esc(g.title)}"></button>`;
+  return `<li class="g-row${g.done ? " done" : ""}">
+    ${mark}
     <div class="g-main"><a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.title)}</a>
       <div class="g-meta">${g.priority ? `<span class="tag">${esc(g.priority)}</span>` : ""}${g.due ? `<span class="tag${over ? " over" : ""}">${shortDay(g.due)}${over ? " 지남" : ""}</span>` : ""}
       ${a.total ? `<span class="g-prog" title="이어진 할 일 ${a.done}/${a.total}"><i style="width:${pct}%"></i></span><span class="mono">${a.done}/${a.total}</span>` : ""}</div></div></li>`;
@@ -908,10 +920,11 @@ function areaCard(a, lists) {
   const groups = lists.map((l) => ({ l, xs: a.items.filter((g) => g.listId === l.id) })).filter((x) => x.xs.length);
   const other = a.items.filter((g) => !lists.some((l) => l.id === g.listId));
   if (other.length) groups.push({ l: { id: "", name: "분류 없음" }, xs: other });
-  const projects = a.items.filter((g) => /project/i.test(g.list)).length;
+  const projects = a.items.filter((g) => /project/i.test(g.list) && !g.done).length;
+  const open = a.items.filter((g) => !g.done && !g.ref).length;
   return `<section class="a-card"${a.id ? ` data-area-card="${esc(a.id)}"` : ""}>
     <header><h3>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a>` : esc(a.name)}</h3>
-      <span class="msg">${projects ? `프로젝트 ${projects} · ` : ""}열린 항목 ${a.items.length}</span></header>
+      <span class="msg">${projects ? `프로젝트 ${projects} · ` : ""}열린 항목 ${open}</span></header>
     ${groups.length ? groups.map(({ l, xs }) => `<p class="sec-t">${esc(l.name)} <b>${xs.length}</b></p><ul class="g-list">${xs.map(gtdRow).join("")}</ul>`).join("") : `<p class="msg">열린 항목이 없습니다.</p>`}
     ${a.id ? `<form class="g-add" data-garea="${esc(a.id)}"><input class="input" name="title" maxlength="120" placeholder="+ 이 영역에 추가" aria-label="새 항목 이름">
       <select class="input" name="list" aria-label="종류">${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select>
@@ -923,12 +936,20 @@ function renderAreas(v) {
   loadBoard();
   const cards = board.areas.map((a) => areaCard(a, board.lists));
   if (board.noArea.length) cards.push(areaCard({ id: "", name: "영역 없음", url: "", items: board.noArea }, board.lists));
-  v.innerHTML = `<p class="msg" style="margin:0 0 12px">노션 Areas of Responsibility 기준입니다. 동그라미를 누르면 GTD System에서 완료로 바뀌고, 이름을 누르면 노션이 열립니다.</p><div class="a-grid">${cards.join("")}</div>`;
+  v.innerHTML = `<div class="a-bar"><button type="button" class="chip" data-board="boardDone" aria-pressed="${!!ui.boardDone}">완료 포함</button>
+    <button type="button" class="chip" data-board="boardRefs" aria-pressed="${!!ui.boardRefs}">자료(Reference) 보기</button>
+    <span class="msg">노션 Areas of Responsibility 기준입니다. 동그라미를 누르면 완료, ✓를 누르면 완료가 풀립니다. 이름을 누르면 노션이 열립니다.</span></div><div class="a-grid">${cards.join("")}</div>`;
 }
 document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-board]"); if (t) { ui[t.dataset.board] = !ui[t.dataset.board]; saveUi(); board = null; render(); return; }
+  const u = e.target.closest("[data-gundo]");
+  if (u && board) { const id = u.dataset.gundo; boardOp({ op: "gtd-done", id, done: false }, () => { [...board.areas.flatMap((a) => a.items), ...board.noArea].forEach((g) => { if (g.id === id) g.done = false; }); }); toast("완료를 풀었습니다."); return; }
   const b = e.target.closest("[data-gdone]"); if (!b || !board) return;
   const id = b.dataset.gdone;
-  boardOp({ op: "gtd-done", id, done: true }, () => { board.areas.forEach((a) => { a.items = a.items.filter((g) => g.id !== id); }); board.noArea = board.noArea.filter((g) => g.id !== id); });
+  boardOp({ op: "gtd-done", id, done: true }, () => {
+    if (ui.boardDone) { [...board.areas.flatMap((a) => a.items), ...board.noArea].forEach((g) => { if (g.id === id) g.done = true; }); return; }
+    board.areas.forEach((a) => { a.items = a.items.filter((g) => g.id !== id); }); board.noArea = board.noArea.filter((g) => g.id !== id);
+  });
   toast("완료로 표시했습니다.");
 });
 document.addEventListener("submit", (e) => {

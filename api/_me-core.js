@@ -90,15 +90,17 @@ function whoIs(req, env) {
 }
 
 export function createMeHandler({ notion, store, dbId }, env = process.env) {
-  async function loadAll() {
+  // all = true 이면 오래된 완료까지 전부 (?all=1)
+  async function loadAll(all) {
     const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
+    const recent = { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] };
     const [db, pages, saved] = await Promise.all([
       notion.database(dbId),
       notion.queryAll(dbId, {
         and: [
           { property: P.area, select: { is_not_empty: true } },
           { property: P.skip, checkbox: { equals: false } },
-          { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] },
+          ...(all ? [] : [recent]),
         ],
       }),
       store.load(),
@@ -126,17 +128,20 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
     try {
       // 영역 현황판 (/api/me/?scope=areas, 또는 op가 gtd-로 시작)
       const body0 = req.method === 'POST' ? (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})) : {};
-      const scope = String(req.query?.scope || new URL(req.url || '/', 'http://x').searchParams.get('scope') || '');
+      const qs = new URL(req.url || '/', 'http://x').searchParams;
+      const q = (k) => String(req.query?.[k] ?? qs.get(k) ?? '');
+      const scope = q('scope');
+      const boardOpts = { done: q('done') === '1', refs: q('refs') === '1' };
       if ((req.method === 'GET' && scope === 'areas') || String(body0.op || '').startsWith('gtd-')) {
-        let board = await loadAreaBoard(notion, dbId);
+        let board = await loadAreaBoard(notion, dbId, boardOpts);
         if (req.method === 'POST') {
           const err = await areaOp(notion, body0, board);
           if (err) return res.status(400).json({ error: err });
-          board = await loadAreaBoard(notion, dbId);
+          board = await loadAreaBoard(notion, dbId, boardOpts);
         }
         return res.status(200).json({ ...board, me });
       }
-      const { areas, tags, items, meta, versions } = await loadAll();
+      const { areas, tags, items, meta, versions } = await loadAll(q('all') === '1');
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
       const reply = (list) => res.status(200).json({ items: list.map(clean), areas, tags, me });
