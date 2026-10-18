@@ -221,6 +221,19 @@ td .area i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); 
 select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76rem; font-weight: 700; appearance: none; }
 
 /* 빈 화면 */
+.today { padding: 0 16px; margin: 4px 0 12px; display: grid; gap: 10px; }
+.td-alert { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--bad-soft); color: var(--bad-ink); font-weight: 700; font-size: .9rem; }
+.td-cap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .td-cap .input { flex: 1 1 320px; padding: 10px 12px; font-size: .95rem; }
+.td-stat { font-size: .82rem; color: var(--fg-2); } .td-stat b { color: var(--fg); }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 10px; align-items: start; }
+.td-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 0; }
+.td-box.warn { border-color: var(--bad-soft); }
+.td-box h3 { margin: 0 0 6px; font-size: .95rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .td-box h3 b { color: var(--fg-3); }
+.td-box .link { margin-left: auto; background: none; border: 0; color: var(--fg-3); font-size: .8rem; cursor: pointer; text-decoration: underline; padding: 0; }
+.td-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; } .td-list li { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
+.td-t { min-width: 0; font-size: .9rem; } .td-acts { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; } .td-acts .chip { padding: 3px 9px; font-size: .78rem; }
+.td-date { width: 128px; padding: 3px 6px; font-size: .78rem; }
+.td-list li.is-done .td-t { color: var(--fg-3); text-decoration: line-through; } .td-list li.is-moved .td-t { color: var(--fg-2); }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
 .a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
 .a-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -342,6 +355,7 @@ dialog::backdrop { background: rgba(0,0,0,.3); }
     <div class="filters" id="filters"></div>
   </header>
 
+  <section class="today" id="today-panel" aria-label="오늘" hidden></section>
   <section class="summary" id="summary" aria-label="분야별 진척"></section>
   <div class="alerts" id="alerts"></div>
   <main id="view"></main>
@@ -530,6 +544,7 @@ function render() {
   const scroll = { x: lastView === ui.view ? (v.querySelector(".flow-wrap, .tl, .board, .table-wrap")?.scrollLeft || 0) : null };
   v.innerHTML = "";
   const onAreas = ME && ui.view === "areas";
+  $("#today-panel").hidden = !ME || onAreas; if (ME && !onAreas) renderToday();
   ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas; });
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
@@ -884,6 +899,79 @@ document.addEventListener("keydown", (e) => {
   else if ("1234".includes(e.key) && e.key.length === 1) { ui.view = ["flow", "board", "time", "list"][Number(e.key) - 1]; saveUi(); render(); }
 });
 window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); });
+
+// ───────── 오늘: 기록 · 정리 · 점검 (/me/ 전용) ─────────
+// 수집함(분야 없는 기록) 정리 → 오늘의 3가지 → 저녁 점검(완료 · 내일로 · 보류 + 이유) → 3일 넘게 밀린 일 다시 정하기
+let tday = null, tdayAt = 0, tdayBusy = false, pickTop = new Set();
+async function loadTday(force) {
+  if (tdayBusy || (!force && tday && Date.now() - tdayAt < 30000)) return;
+  tdayBusy = true;
+  try { tday = await api("GET", null, CFG.api + "?scope=today"); tdayAt = Date.now(); }
+  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } }
+  finally { tdayBusy = false; }
+  if (ME && ui.view !== "areas") renderToday();
+}
+async function tdayOp(body, msg) {
+  setSync("busy");
+  try { tday = await api("POST", body, CFG.api + "?scope=today"); tdayAt = Date.now(); setSync("ok"); if (msg) toast(msg); }
+  catch (err) { setSync("err"); toast(err.message === "reason_required" ? "미루는 이유를 한 줄 적어 주세요." : "저장하지 못했습니다."); await loadTday(true); }
+  renderToday(); refresh();
+}
+const kstHour = () => new Date(Date.now() + 9 * 3600e3).getUTCHours();
+function renderToday() {
+  const el = $("#today-panel");
+  if (!tday) { el.innerHTML = `<div class="td-box"><p class="msg">오늘 정보를 불러오는 중…</p></div>`; loadTday(); return; }
+  loadTday();
+  const t = tday, evening = kstHour() >= 18;
+  const aName = (k) => esc(areaOf(k).name || "");
+  const due = (i) => (i.due ? `<span class="tag">${shortDay(i.due)}</span>` : "");
+  const inbox = t.inbox.length ? `<div class="td-box"><h3>수집함 <b>${t.inbox.length}</b> <span class="msg">분야를 누르면 흐름표로 옮겨 갑니다</span></h3><ul class="td-list">${t.inbox.map((i) => `<li data-inbox="${esc(i.id)}"><span class="td-t">${esc(i.title)}</span>
+      <span class="td-acts"><input class="input td-date" type="date" aria-label="마감일">${areas.map((a) => `<button type="button" class="chip" data-triage="${esc(a.key)}" style="--c:${colorOf(a.key)}"><span class="dot" style="--c:${colorOf(a.key)}"></span>${esc(a.name)}</button>`).join("")}<button type="button" class="chip" data-inskip title="안 하기">✕</button></span></li>`).join("")}</ul></div>` : "";
+  const topDone = t.top.filter((i) => i.status === "done" || i.check).length;
+  const top = t.top.length
+    ? `<div class="td-box"><h3>오늘의 3가지 <b>${topDone}/${t.top.length}</b> ${evening ? `<span class="msg">점검 시간 — 남은 일은 하나씩 정리하세요</span>` : ""}<button type="button" class="link" data-topreset>다시 고르기</button></h3><ul class="td-list">${t.top.map((i) => {
+        const c = i.check, done = i.status === "done" || (c && c.r === "done");
+        return `<li data-top="${esc(i.id)}" class="${done ? "is-done" : c ? "is-moved" : ""}"><span class="td-t">${done ? "✓ " : ""}${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</span>
+          <span class="td-acts">${done ? "" : c ? `<span class="tag">${c.r === "tomorrow" ? "내일로" : "보류"}: ${esc(c.why)}</span>` : `<button type="button" class="chip" data-check="done">완료</button><button type="button" class="chip" data-check="tomorrow">내일로</button><button type="button" class="chip" data-check="hold">보류</button>`}</span></li>`; }).join("")}</ul></div>`
+    : `<div class="td-box"><h3>오늘의 3가지를 정하세요 <span class="msg">추천에서 3개까지 고르고 확정</span></h3><ul class="td-list">${t.suggest.map((i) => `<li><label class="td-t"><input type="checkbox" data-pick="${esc(i.id)}" ${pickTop.has(i.id) ? "checked" : ""}> ${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</label></li>`).join("") || `<li class="msg">흐름표에 할 일이 없습니다. 먼저 기록해 보세요.</li>`}</ul>
+      ${t.suggest.length ? `<button type="button" class="btn primary" data-topset ${pickTop.size ? "" : "disabled"}>${pickTop.size ? `${pickTop.size}개로 확정` : "골라 주세요"}</button>` : ""}</div>`;
+  const revisit = t.revisit.length ? `<div class="td-box warn"><h3>다시 정할 일 <b>${t.revisit.length}</b> <span class="msg">마감이 3일 넘게 지났습니다. 날짜를 새로 정하거나 안 하기로 하세요</span></h3><ul class="td-list">${t.revisit.map((i) => `<li data-rev="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> <span class="tag over">${i.late}일 지남</span></span>
+      <span class="td-acts"><input class="input td-date" type="date" aria-label="새 마감일"><button type="button" class="chip" data-revdate>날짜 바꾸기</button><button type="button" class="chip" data-revskip>안 하기</button></span></li>`).join("")}</ul></div>` : "";
+  const capKeep = $("#cap-in")?.value || "", capFocus = document.activeElement?.id === "cap-in";
+  el.innerHTML = `${t.yesterdayMissed ? `<p class="td-alert">어제 점검을 하지 않았습니다. 남은 일을 먼저 정리해 주세요.</p>` : ""}
+    <form class="td-cap" id="cap-form"><input class="input" id="cap-in" maxlength="120" placeholder="떠오른 일을 한 줄로 기록하세요 (Enter) — 정리는 저녁에" autocomplete="off" aria-label="빠른 기록">
+      <span class="td-stat">오늘 기록 <b>${t.stats.today}</b> · 이번 주 <b>${t.stats.week}</b> · 연속 <b>${t.stats.streak}일</b></span></form>
+    <div class="td-grid">${evening ? inbox + top : top + inbox}${revisit}</div>`;
+  if (capKeep) $("#cap-in").value = capKeep; if (capFocus) $("#cap-in").focus();
+}
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "cap-form") return;
+  e.preventDefault(); const v = $("#cap-in").value.trim(); if (!v) return;
+  $("#cap-in").value = ""; tday && (tday.stats.today += 1);
+  tdayOp({ op: "capture", text: v }, "수집함에 넣었습니다.");
+});
+document.addEventListener("change", (e) => {
+  const c = e.target.closest("[data-pick]"); if (!c) return;
+  if (c.checked) { if (pickTop.size >= 3) { c.checked = false; toast("3개까지 고를 수 있습니다."); return; } pickTop.add(c.dataset.pick); } else pickTop.delete(c.dataset.pick);
+  renderToday();
+});
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t.closest("[data-topset]")) { const ids = [...pickTop]; pickTop = new Set(); tdayOp({ op: "top-set", ids }, "오늘의 3가지를 정했습니다."); return; }
+  if (t.closest("[data-topreset]")) { pickTop = new Set(tday.top.map((i) => i.id)); tdayOp({ op: "top-set", ids: [] }); return; }
+  const tri = t.closest("[data-triage]");
+  if (tri) { const li = tri.closest("[data-inbox]"); tdayOp({ op: "triage", id: li.dataset.inbox, area: tri.dataset.triage, due: $(".td-date", li).value }, "흐름표로 옮겼습니다."); return; }
+  const sk = t.closest("[data-inskip]"); if (sk) { tdayOp({ op: "inbox-skip", id: sk.closest("[data-inbox]").dataset.inbox }, "안 하기로 했습니다."); return; }
+  const ck = t.closest("[data-check]");
+  if (ck) {
+    const id = ck.closest("[data-top]").dataset.top, r = ck.dataset.check; let why = "";
+    if (r !== "done") { why = (prompt(r === "tomorrow" ? "내일로 미루는 이유를 한 줄로 적어 주세요." : "보류하는 이유를 한 줄로 적어 주세요.") || "").trim(); if (!why) { toast("이유를 적어야 미룰 수 있습니다."); return; } }
+    tdayOp({ op: "check", id, result: r, why }, r === "done" ? "완료했습니다." : "기록했습니다."); return;
+  }
+  const rd = t.closest("[data-revdate]");
+  if (rd) { const li = rd.closest("[data-rev]"), d = $(".td-date", li).value; if (!d) { toast("새 마감일을 먼저 고르세요."); return; } tdayOp({ op: "revisit", id: li.dataset.rev, due: d }, "마감일을 다시 정했습니다."); return; }
+  const rs = t.closest("[data-revskip]"); if (rs) { tdayOp({ op: "revisit", id: rs.closest("[data-rev]").dataset.rev, skip: true }, "안 하기로 했습니다."); return; }
+});
 
 // ───────── 영역 현황판 (/me/ 전용) ─────────
 // 노션 Areas of Responsibility → GTD System(프로젝트 · 다음 행동 …) → Action_DB 할 일 진행

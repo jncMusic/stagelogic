@@ -17,6 +17,18 @@
     {
       "path": "/api/digest/",
       "schedule": "0 23 * * 0-4"
+    },
+    {
+      "path": "/api/me-digest/?kind=morning",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/me-digest/?kind=evening",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/me-digest/?kind=weekly",
+      "schedule": "0 11 * * 0"
     }
   ],
   "rewrites": [

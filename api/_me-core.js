@@ -4,8 +4,9 @@
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
 import { loadAreaBoard, areaOp } from './_me-areas.js';
+import { loadToday, kst, addDays } from './_me-habit.js';
 
-const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
+export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
 const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
 const NAME = { ...FIELD_NAME, tag: '태그' };
 const META_FIELDS = ['detail', 'note', 'owner', 'deps', 'order'];
@@ -51,7 +52,7 @@ export function fromPage(page, meta = {}) {
 }
 
 // 노션에 쓸 속성 만들기 (바뀐 칸만)
-function toProps(fields, areas, cur) {
+export function toProps(fields, areas, cur) {
   const out = {};
   if ('title' in fields) out[P.title] = { title: [{ text: { content: fields.title } }] };
   if ('area' in fields) { const a = areas.find((x) => x.key === fields.area); out[P.area] = { select: a ? { name: a.name } : null }; }
@@ -89,7 +90,8 @@ function whoIs(req, env) {
   return null;
 }
 
-export function createMeHandler({ notion, store, dbId }, env = process.env) {
+// 노션 · 메타 읽기. 화면 API와 아침 · 저녁 메일이 함께 쓴다.
+export function createMeService({ notion, store, dbId }, env = process.env) {
   // all = true 이면 오래된 완료까지 전부 (?all=1)
   async function loadAll(all) {
     const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
@@ -112,6 +114,84 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
     const ids = new Set(items.map((i) => i.id));
     items.forEach((i) => { i.deps = i.deps.filter((d) => ids.has(d) && d !== i.id); });
     return { areas, tags, items, meta, versions: saved.versions || [] };
+  }
+  const today = (loaded, now = Date.now()) => loadToday({ notion, dbId, P, items: loaded.items, meta: loaded.meta, env, now });
+  return { loadAll, today };
+}
+
+const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revisit'];
+
+export function createMeHandler({ notion, store, dbId }, env = process.env) {
+  const { loadAll, today: loadTodayFor } = createMeService({ notion, store, dbId }, env);
+
+  // 기록 · 정리 · 점검 (수집함, 오늘의 3가지, 저녁 점검, 다시 정할 일)
+  async function habitOp(body, me) {
+    const loaded = await loadAll(false);
+    const { areas, tags, items, meta, versions } = loaded;
+    const now = new Date().toISOString();
+    const d = kst();
+    const cur = items.find((i) => i.id === body.id);
+    const days = meta._days || (meta._days = {});
+    const day = days[d] || (days[d] = { top: [], check: {} });
+    let metaChanged = false;
+    const note = (it, line) => { const m = meta[it.id] || {}; meta[it.id] = { ...m, log: [...(m.log || []), { at: now, by: me, text: line }].slice(-MAX_LOG) }; metaChanged = true; };
+    switch (body.op) {
+      case 'capture': {
+        const title = text(body.text, 120);
+        if (!title) return 'title_required';
+        await notion.create(dbId, { [P.title]: { title: [{ text: { content: title } }] } });
+        break;
+      }
+      case 'triage': {
+        // 수집함 항목에 분야(필수) · 마감일 · 태그를 붙인다 → 흐름표로 옮겨 감
+        if (typeof body.id !== 'string' || !areas.some((a) => a.key === body.area)) return 'bad_request';
+        const f = { area: body.area };
+        if (okDay(body.due)) f.due = body.due;
+        if (body.tag && tags.some((t) => t.name === body.tag)) f.tag = body.tag;
+        await notion.update(body.id, toProps(f, areas, null));
+        break;
+      }
+      case 'inbox-skip':
+        if (typeof body.id !== 'string') return 'bad_request';
+        await notion.update(body.id, { [P.skip]: { checkbox: true } });
+        break;
+      case 'top-set': {
+        const ids = (Array.isArray(body.ids) ? body.ids : []).filter((id) => items.some((i) => i.id === id)).slice(0, 3);
+        day.top = [...new Set(ids)];
+        day.check = Object.fromEntries(Object.entries(day.check || {}).filter(([id]) => day.top.includes(id)));
+        metaChanged = true;
+        break;
+      }
+      case 'check': {
+        // 오늘의 3가지 점검: 완료 / 내일로(이유) / 보류(이유)
+        if (!cur || !['done', 'tomorrow', 'hold'].includes(body.result)) return 'bad_request';
+        const why = text(body.why, 200);
+        if (body.result !== 'done' && !why) return 'reason_required';
+        if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
+        if (body.result === 'tomorrow') await notion.update(cur.id, toProps({ due: addDays(d, 1) }, areas, cur));
+        if (body.result === 'hold') await notion.update(cur.id, toProps({ status: 'blocked' }, areas, cur));
+        day.check = { ...(day.check || {}), [cur.id]: { r: body.result, why, at: now } };
+        note(cur, body.result === 'done' ? '점검: 완료' : `점검: ${body.result === 'tomorrow' ? '내일로' : '보류'} — ${why}`);
+        break;
+      }
+      case 'revisit': {
+        // 3일 넘게 밀린 일: 날짜를 다시 정하거나 안 하기로
+        if (!cur) return 'bad_request';
+        if (body.skip) { await notion.update(cur.id, { [P.skip]: { checkbox: true } }); note(cur, '다시 정하기: 안 하기'); }
+        else if (okDay(body.due)) { await notion.update(cur.id, toProps({ due: body.due }, areas, cur)); note(cur, `다시 정하기: 마감 ${body.due}`); }
+        else return 'bad_request';
+        break;
+      }
+      default:
+        return 'unknown_op';
+    }
+    if (metaChanged) {
+      // 점검 기록은 90일만 남긴다
+      const keep = addDays(d, -90);
+      Object.keys(days).forEach((k) => { if (k < keep) delete days[k]; });
+      await store.save({ meta }, versions, KEEP_VERSIONS);
+    }
+    return null;
   }
 
   return async function handler(req, res) {
@@ -140,6 +220,13 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
           board = await loadAreaBoard(notion, dbId, boardOpts);
         }
         return res.status(200).json({ ...board, me });
+      }
+      if ((req.method === 'GET' && scope === 'today') || HABIT_OPS.includes(body0.op)) {
+        if (req.method === 'POST') {
+          const err = await habitOp(body0, me);
+          if (err) return res.status(400).json({ error: err });
+        }
+        return res.status(200).json({ ...(await loadTodayFor(await loadAll(false))), me });
       }
       const { areas, tags, items, meta, versions } = await loadAll(q('all') === '1');
       const tagNames = tags.map((t) => t.name);
