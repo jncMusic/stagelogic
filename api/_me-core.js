@@ -5,6 +5,8 @@
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
 import { loadAreaBoard, areaOp } from './_me-areas.js';
 import { loadToday, kst, addDays } from './_me-habit.js';
+import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
+import { sendMail } from './_mail.js';
 
 export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
 const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
@@ -121,8 +123,9 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
 
 const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revisit'];
 
-export function createMeHandler({ notion, store, dbId }, env = process.env) {
+export function createMeHandler({ notion, store, dbId, send }, env = process.env) {
   const { loadAll, today: loadTodayFor } = createMeService({ notion, store, dbId }, env);
+  const mail = send || ((m) => sendMail(m, env));
 
   // 기록 · 정리 · 점검 (수집함, 오늘의 3가지, 저녁 점검, 다시 정할 일)
   async function habitOp(body, me) {
@@ -220,6 +223,17 @@ export function createMeHandler({ notion, store, dbId }, env = process.env) {
           board = await loadAreaBoard(notion, dbId, boardOpts);
         }
         return res.status(200).json({ ...board, me });
+      }
+      // 메일 미리 받기: 아침 · 저녁 · 주간 메일을 지금 바로 ME_MAIL_TO 로 보낸다
+      if (body0.op === 'mail-preview') {
+        const lack = [!env.ME_MAIL_TO && 'ME_MAIL_TO', !env.RESEND_API_KEY && 'RESEND_API_KEY'].filter(Boolean);
+        if (lack.length) return res.status(503).json({ error: 'not_configured', missing: lack });
+        const kind = ['morning', 'evening', 'weekly'].includes(body0.kind) ? body0.kind : 'morning';
+        const loaded = await loadAll(kind === 'weekly');
+        const t = await loadTodayFor(loaded);
+        const m = kind === 'evening' ? buildEvening(t, loaded.items, loaded.areas) : kind === 'weekly' ? buildWeekly(t, loaded.items, loaded.areas, loaded.meta) : buildMorning(t, loaded.items, loaded.areas);
+        await mail({ to: env.ME_MAIL_TO, subject: `(미리 보기) ${m.subject}`, html: m.html });
+        return res.status(200).json({ ok: true, kind, subject: m.subject });
       }
       if ((req.method === 'GET' && scope === 'today') || HABIT_OPS.includes(body0.op)) {
         if (req.method === 'POST') {
