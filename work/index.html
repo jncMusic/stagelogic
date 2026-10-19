@@ -221,6 +221,19 @@ td .area i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); 
 select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76rem; font-weight: 700; appearance: none; }
 
 /* 빈 화면 */
+.today { padding: 0 16px; margin: 4px 0 12px; display: grid; gap: 10px; }
+.td-alert { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--bad-soft); color: var(--bad-ink); font-weight: 700; font-size: .9rem; }
+.td-cap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .td-cap .input { flex: 1 1 320px; padding: 10px 12px; font-size: .95rem; }
+.td-stat { font-size: .82rem; color: var(--fg-2); } .td-stat b { color: var(--fg); }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 10px; align-items: start; }
+.td-box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; min-width: 0; }
+.td-box.warn { border-color: var(--bad-soft); }
+.td-box h3 { margin: 0 0 6px; font-size: .95rem; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .td-box h3 b { color: var(--fg-3); }
+.td-box .link { margin-left: auto; background: none; border: 0; color: var(--fg-3); font-size: .8rem; cursor: pointer; text-decoration: underline; padding: 0; }
+.td-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; } .td-list li { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
+.td-t { min-width: 0; font-size: .9rem; } .td-acts { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; } .td-acts .chip { padding: 3px 9px; font-size: .78rem; }
+.td-date { width: 128px; padding: 3px 6px; font-size: .78rem; }
+.td-list li.is-done .td-t { color: var(--fg-3); text-decoration: line-through; } .td-list li.is-moved .td-t { color: var(--fg-2); }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
 .a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
 .a-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -230,6 +243,10 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .g-row { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 5px 0; border-top: 1px solid var(--line); }
 .g-check { width: 16px; height: 16px; margin-top: 3px; border-radius: 50%; border: 1.6px solid var(--fg-3); background: none; padding: 0; cursor: pointer; }
 .g-check:hover { border-color: var(--fg); background: var(--surface-2); }
+.g-check.is-done { background: var(--a3); border-color: var(--a3); color: #fff; font-size: 10px; line-height: 13px; font-weight: 800; }
+.g-row.done .g-main a { color: var(--fg-3); text-decoration: line-through; }
+.g-ref { width: 16px; text-align: center; color: var(--fg-3); font-size: 12px; line-height: 22px; }
+.a-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; } .a-bar .msg { flex: 1 1 260px; }
 .g-main { min-width: 0; font-size: .9rem; } .g-meta { display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: .75rem; color: var(--fg-3); flex-wrap: wrap; }
 .g-prog { width: 60px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; display: inline-block; } .g-prog i { display: block; height: 100%; background: var(--a3); }
 .g-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-top: 8px; } .g-add .input { padding: 6px 8px; font-size: .85rem; min-width: 0; }
@@ -338,6 +355,7 @@ dialog::backdrop { background: rgba(0,0,0,.3); }
     <div class="filters" id="filters"></div>
   </header>
 
+  <section class="today" id="today-panel" aria-label="오늘" hidden></section>
   <section class="summary" id="summary" aria-label="분야별 진척"></section>
   <div class="alerts" id="alerts"></div>
   <main id="view"></main>
@@ -441,7 +459,9 @@ const relTime = (iso) => {
 };
 
 // ───────── 서버 ─────────
-async function api(method, body, url = CFG.api) {
+// /me/ 에서 '오래된 완료 포함'을 켜면 60일 넘은 완료 업무까지 불러온다
+const taskUrl = () => CFG.api + (ME && ui.allDone ? "?all=1" : "");
+async function api(method, body, url = taskUrl()) {
   const headers = { "Content-Type": "application/json", "x-checklist-pass": pass };
   const name = store.get(K_USER); if (name) headers["x-checklist-user"] = encodeURIComponent(name);
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
@@ -524,6 +544,7 @@ function render() {
   const scroll = { x: lastView === ui.view ? (v.querySelector(".flow-wrap, .tl, .board, .table-wrap")?.scrollLeft || 0) : null };
   v.innerHTML = "";
   const onAreas = ME && ui.view === "areas";
+  $("#today-panel").hidden = !ME || onAreas; if (ME && !onAreas) renderToday();
   ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas; });
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
@@ -556,6 +577,7 @@ function renderFilters() {
     `<span class="sep"></span>` + owners().filter((o) => items.some((i) => i.owner === o)).map((o) => chip("owners", o, o)).join("") +
     `<span class="sep"></span>` + STATUS.map((s) => chip("statuses", s.key, s.name)).join("") +
     `<button type="button" class="chip" data-g="hideDone" aria-pressed="${ui.hideDone}">완료 숨기기</button>` +
+    (ME ? `<button type="button" class="chip" data-g="allDone" aria-pressed="${!!ui.allDone}" title="기본은 최근 60일 안에 끝낸 업무만 보입니다">오래된 완료 포함</button>` : "") +
     (any ? `<button type="button" class="clear" data-g="clear">필터 지우기</button>` : "");
 }
 function renderSummary() {
@@ -833,6 +855,7 @@ document.addEventListener("click", (e) => {
   if (ch) { const g = ch.dataset.g;
     if (g === "clear") Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false });
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
+    else if (g === "allDone") { ui.allDone = !ui.allDone; saveUi(); refresh(); return; }
     else { const v = ch.dataset.v; ui[g] = ui[g].includes(v) ? ui[g].filter((x) => x !== v) : [...ui[g], v]; }
     saveUi(); render(); return; }
   const sc = t.closest(".sum-card"); if (sc) { const k = sc.dataset.area; ui.areas = ui.areas.length === 1 && ui.areas[0] === k ? [] : [k]; saveUi(); render(); return; }
@@ -877,13 +900,87 @@ document.addEventListener("keydown", (e) => {
 });
 window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); });
 
+// ───────── 오늘: 기록 · 정리 · 점검 (/me/ 전용) ─────────
+// 수집함(분야 없는 기록) 정리 → 오늘의 3가지 → 저녁 점검(완료 · 내일로 · 보류 + 이유) → 3일 넘게 밀린 일 다시 정하기
+let tday = null, tdayAt = 0, tdayBusy = false, pickTop = new Set();
+async function loadTday(force) {
+  if (tdayBusy || (!force && tday && Date.now() - tdayAt < 30000)) return;
+  tdayBusy = true;
+  try { tday = await api("GET", null, CFG.api + "?scope=today"); tdayAt = Date.now(); }
+  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } }
+  finally { tdayBusy = false; }
+  if (ME && ui.view !== "areas") renderToday();
+}
+async function tdayOp(body, msg) {
+  setSync("busy");
+  try { tday = await api("POST", body, CFG.api + "?scope=today"); tdayAt = Date.now(); setSync("ok"); if (msg) toast(msg); }
+  catch (err) { setSync("err"); toast(err.message === "reason_required" ? "미루는 이유를 한 줄 적어 주세요." : "저장하지 못했습니다."); await loadTday(true); }
+  renderToday(); refresh();
+}
+const kstHour = () => new Date(Date.now() + 9 * 3600e3).getUTCHours();
+function renderToday() {
+  const el = $("#today-panel");
+  if (!tday) { el.innerHTML = `<div class="td-box"><p class="msg">오늘 정보를 불러오는 중…</p></div>`; loadTday(); return; }
+  loadTday();
+  const t = tday, evening = kstHour() >= 18;
+  const aName = (k) => esc(areaOf(k).name || "");
+  const due = (i) => (i.due ? `<span class="tag">${shortDay(i.due)}</span>` : "");
+  const inbox = t.inbox.length ? `<div class="td-box"><h3>수집함 <b>${t.inbox.length}</b> <span class="msg">분야를 누르면 흐름표로 옮겨 갑니다</span></h3><ul class="td-list">${t.inbox.map((i) => `<li data-inbox="${esc(i.id)}"><span class="td-t">${esc(i.title)}</span>
+      <span class="td-acts"><input class="input td-date" type="date" aria-label="마감일">${areas.map((a) => `<button type="button" class="chip" data-triage="${esc(a.key)}" style="--c:${colorOf(a.key)}"><span class="dot" style="--c:${colorOf(a.key)}"></span>${esc(a.name)}</button>`).join("")}<button type="button" class="chip" data-inskip title="안 하기">✕</button></span></li>`).join("")}</ul></div>` : "";
+  const topDone = t.top.filter((i) => i.status === "done" || i.check).length;
+  const top = t.top.length
+    ? `<div class="td-box"><h3>오늘의 3가지 <b>${topDone}/${t.top.length}</b> ${evening ? `<span class="msg">점검 시간 — 남은 일은 하나씩 정리하세요</span>` : ""}<button type="button" class="link" data-topreset>다시 고르기</button></h3><ul class="td-list">${t.top.map((i) => {
+        const c = i.check, done = i.status === "done" || (c && c.r === "done");
+        return `<li data-top="${esc(i.id)}" class="${done ? "is-done" : c ? "is-moved" : ""}"><span class="td-t">${done ? "✓ " : ""}${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</span>
+          <span class="td-acts">${done ? "" : c ? `<span class="tag">${c.r === "tomorrow" ? "내일로" : "보류"}: ${esc(c.why)}</span>` : `<button type="button" class="chip" data-check="done">완료</button><button type="button" class="chip" data-check="tomorrow">내일로</button><button type="button" class="chip" data-check="hold">보류</button>`}</span></li>`; }).join("")}</ul></div>`
+    : `<div class="td-box"><h3>오늘의 3가지를 정하세요 <span class="msg">추천에서 3개까지 고르고 확정</span></h3><ul class="td-list">${t.suggest.map((i) => `<li><label class="td-t"><input type="checkbox" data-pick="${esc(i.id)}" ${pickTop.has(i.id) ? "checked" : ""}> ${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</label></li>`).join("") || `<li class="msg">흐름표에 할 일이 없습니다. 먼저 기록해 보세요.</li>`}</ul>
+      ${t.suggest.length ? `<button type="button" class="btn primary" data-topset ${pickTop.size ? "" : "disabled"}>${pickTop.size ? `${pickTop.size}개로 확정` : "골라 주세요"}</button>` : ""}</div>`;
+  const revisit = t.revisit.length ? `<div class="td-box warn"><h3>다시 정할 일 <b>${t.revisit.length}</b> <span class="msg">마감이 3일 넘게 지났습니다. 날짜를 새로 정하거나 안 하기로 하세요</span></h3><ul class="td-list">${t.revisit.map((i) => `<li data-rev="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> <span class="tag over">${i.late}일 지남</span></span>
+      <span class="td-acts"><input class="input td-date" type="date" aria-label="새 마감일"><button type="button" class="chip" data-revdate>날짜 바꾸기</button><button type="button" class="chip" data-revskip>안 하기</button></span></li>`).join("")}</ul></div>` : "";
+  const capKeep = $("#cap-in")?.value || "", capFocus = document.activeElement?.id === "cap-in";
+  el.innerHTML = `${t.yesterdayMissed ? `<p class="td-alert">어제 점검을 하지 않았습니다. 남은 일을 먼저 정리해 주세요.</p>` : ""}
+    <form class="td-cap" id="cap-form"><input class="input" id="cap-in" maxlength="120" placeholder="떠오른 일을 한 줄로 기록하세요 (Enter) — 정리는 저녁에" autocomplete="off" aria-label="빠른 기록">
+      <span class="td-stat">오늘 기록 <b>${t.stats.today}</b> · 이번 주 <b>${t.stats.week}</b> · 연속 <b>${t.stats.streak}일</b></span></form>
+    <div class="td-grid">${evening ? inbox + top : top + inbox}${revisit}</div>`;
+  if (capKeep) $("#cap-in").value = capKeep; if (capFocus) $("#cap-in").focus();
+}
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "cap-form") return;
+  e.preventDefault(); const v = $("#cap-in").value.trim(); if (!v) return;
+  $("#cap-in").value = ""; tday && (tday.stats.today += 1);
+  tdayOp({ op: "capture", text: v }, "수집함에 넣었습니다.");
+});
+document.addEventListener("change", (e) => {
+  const c = e.target.closest("[data-pick]"); if (!c) return;
+  if (c.checked) { if (pickTop.size >= 3) { c.checked = false; toast("3개까지 고를 수 있습니다."); return; } pickTop.add(c.dataset.pick); } else pickTop.delete(c.dataset.pick);
+  renderToday();
+});
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t.closest("[data-topset]")) { const ids = [...pickTop]; pickTop = new Set(); tdayOp({ op: "top-set", ids }, "오늘의 3가지를 정했습니다."); return; }
+  if (t.closest("[data-topreset]")) { pickTop = new Set(tday.top.map((i) => i.id)); tdayOp({ op: "top-set", ids: [] }); return; }
+  const tri = t.closest("[data-triage]");
+  if (tri) { const li = tri.closest("[data-inbox]"); tdayOp({ op: "triage", id: li.dataset.inbox, area: tri.dataset.triage, due: $(".td-date", li).value }, "흐름표로 옮겼습니다."); return; }
+  const sk = t.closest("[data-inskip]"); if (sk) { tdayOp({ op: "inbox-skip", id: sk.closest("[data-inbox]").dataset.inbox }, "안 하기로 했습니다."); return; }
+  const ck = t.closest("[data-check]");
+  if (ck) {
+    const id = ck.closest("[data-top]").dataset.top, r = ck.dataset.check; let why = "";
+    if (r !== "done") { why = (prompt(r === "tomorrow" ? "내일로 미루는 이유를 한 줄로 적어 주세요." : "보류하는 이유를 한 줄로 적어 주세요.") || "").trim(); if (!why) { toast("이유를 적어야 미룰 수 있습니다."); return; } }
+    tdayOp({ op: "check", id, result: r, why }, r === "done" ? "완료했습니다." : "기록했습니다."); return;
+  }
+  const rd = t.closest("[data-revdate]");
+  if (rd) { const li = rd.closest("[data-rev]"), d = $(".td-date", li).value; if (!d) { toast("새 마감일을 먼저 고르세요."); return; } tdayOp({ op: "revisit", id: li.dataset.rev, due: d }, "마감일을 다시 정했습니다."); return; }
+  const rs = t.closest("[data-revskip]"); if (rs) { tdayOp({ op: "revisit", id: rs.closest("[data-rev]").dataset.rev, skip: true }, "안 하기로 했습니다."); return; }
+});
+
 // ───────── 영역 현황판 (/me/ 전용) ─────────
 // 노션 Areas of Responsibility → GTD System(프로젝트 · 다음 행동 …) → Action_DB 할 일 진행
 let board = null, boardAt = 0, boardBusy = false;
+const boardUrl = () => `${CFG.api}?scope=areas${ui.boardDone ? "&done=1" : ""}${ui.boardRefs ? "&refs=1" : ""}`;
 async function loadBoard(force) {
   if (boardBusy || (!force && board && Date.now() - boardAt < 30000)) return;
   boardBusy = true;
-  try { board = await api("GET", null, CFG.api + "?scope=areas"); boardAt = Date.now(); }
+  try { board = await api("GET", null, boardUrl()); boardAt = Date.now(); }
   catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } toast("영역을 불러오지 못했습니다."); }
   finally { boardBusy = false; }
   if (ui.view === "areas") render();
@@ -891,15 +988,18 @@ async function loadBoard(force) {
 async function boardOp(body, optimistic) {
   if (optimistic) { optimistic(); render(); }
   setSync("busy");
-  try { board = await api("POST", body); boardAt = Date.now(); setSync("ok"); }
+  try { board = await api("POST", body, boardUrl()); boardAt = Date.now(); setSync("ok"); }
   catch { setSync("err"); toast("저장하지 못했습니다. 다시 불러옵니다."); await loadBoard(true); }
   if (ui.view === "areas") render();
 }
 function gtdRow(g) {
   const a = g.actions, pct = a.total ? Math.round(a.done / a.total * 100) : 0;
-  const over = g.due && g.due < TODAY();
-  return `<li class="g-row">
-    <button type="button" class="g-check" data-gdone="${esc(g.id)}" aria-label="완료로 표시: ${esc(g.title)}"></button>
+  const over = !g.done && g.due && g.due < TODAY();
+  const mark = g.ref ? `<span class="g-ref" aria-hidden="true">▤</span>`
+    : g.done ? `<button type="button" class="g-check is-done" data-gundo="${esc(g.id)}" aria-label="완료 풀기: ${esc(g.title)}" title="누르면 완료가 풀립니다">✓</button>`
+    : `<button type="button" class="g-check" data-gdone="${esc(g.id)}" aria-label="완료로 표시: ${esc(g.title)}"></button>`;
+  return `<li class="g-row${g.done ? " done" : ""}">
+    ${mark}
     <div class="g-main"><a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.title)}</a>
       <div class="g-meta">${g.priority ? `<span class="tag">${esc(g.priority)}</span>` : ""}${g.due ? `<span class="tag${over ? " over" : ""}">${shortDay(g.due)}${over ? " 지남" : ""}</span>` : ""}
       ${a.total ? `<span class="g-prog" title="이어진 할 일 ${a.done}/${a.total}"><i style="width:${pct}%"></i></span><span class="mono">${a.done}/${a.total}</span>` : ""}</div></div></li>`;
@@ -908,10 +1008,11 @@ function areaCard(a, lists) {
   const groups = lists.map((l) => ({ l, xs: a.items.filter((g) => g.listId === l.id) })).filter((x) => x.xs.length);
   const other = a.items.filter((g) => !lists.some((l) => l.id === g.listId));
   if (other.length) groups.push({ l: { id: "", name: "분류 없음" }, xs: other });
-  const projects = a.items.filter((g) => /project/i.test(g.list)).length;
+  const projects = a.items.filter((g) => /project/i.test(g.list) && !g.done).length;
+  const open = a.items.filter((g) => !g.done && !g.ref).length;
   return `<section class="a-card"${a.id ? ` data-area-card="${esc(a.id)}"` : ""}>
     <header><h3>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a>` : esc(a.name)}</h3>
-      <span class="msg">${projects ? `프로젝트 ${projects} · ` : ""}열린 항목 ${a.items.length}</span></header>
+      <span class="msg">${projects ? `프로젝트 ${projects} · ` : ""}열린 항목 ${open}</span></header>
     ${groups.length ? groups.map(({ l, xs }) => `<p class="sec-t">${esc(l.name)} <b>${xs.length}</b></p><ul class="g-list">${xs.map(gtdRow).join("")}</ul>`).join("") : `<p class="msg">열린 항목이 없습니다.</p>`}
     ${a.id ? `<form class="g-add" data-garea="${esc(a.id)}"><input class="input" name="title" maxlength="120" placeholder="+ 이 영역에 추가" aria-label="새 항목 이름">
       <select class="input" name="list" aria-label="종류">${lists.map((l) => `<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select>
@@ -923,12 +1024,20 @@ function renderAreas(v) {
   loadBoard();
   const cards = board.areas.map((a) => areaCard(a, board.lists));
   if (board.noArea.length) cards.push(areaCard({ id: "", name: "영역 없음", url: "", items: board.noArea }, board.lists));
-  v.innerHTML = `<p class="msg" style="margin:0 0 12px">노션 Areas of Responsibility 기준입니다. 동그라미를 누르면 GTD System에서 완료로 바뀌고, 이름을 누르면 노션이 열립니다.</p><div class="a-grid">${cards.join("")}</div>`;
+  v.innerHTML = `<div class="a-bar"><button type="button" class="chip" data-board="boardDone" aria-pressed="${!!ui.boardDone}">완료 포함</button>
+    <button type="button" class="chip" data-board="boardRefs" aria-pressed="${!!ui.boardRefs}">자료(Reference) 보기</button>
+    <span class="msg">노션 Areas of Responsibility 기준입니다. 동그라미를 누르면 완료, ✓를 누르면 완료가 풀립니다. 이름을 누르면 노션이 열립니다.</span></div><div class="a-grid">${cards.join("")}</div>`;
 }
 document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-board]"); if (t) { ui[t.dataset.board] = !ui[t.dataset.board]; saveUi(); board = null; render(); return; }
+  const u = e.target.closest("[data-gundo]");
+  if (u && board) { const id = u.dataset.gundo; boardOp({ op: "gtd-done", id, done: false }, () => { [...board.areas.flatMap((a) => a.items), ...board.noArea].forEach((g) => { if (g.id === id) g.done = false; }); }); toast("완료를 풀었습니다."); return; }
   const b = e.target.closest("[data-gdone]"); if (!b || !board) return;
   const id = b.dataset.gdone;
-  boardOp({ op: "gtd-done", id, done: true }, () => { board.areas.forEach((a) => { a.items = a.items.filter((g) => g.id !== id); }); board.noArea = board.noArea.filter((g) => g.id !== id); });
+  boardOp({ op: "gtd-done", id, done: true }, () => {
+    if (ui.boardDone) { [...board.areas.flatMap((a) => a.items), ...board.noArea].forEach((g) => { if (g.id === id) g.done = true; }); return; }
+    board.areas.forEach((a) => { a.items = a.items.filter((g) => g.id !== id); }); board.noArea = board.noArea.filter((g) => g.id !== id);
+  });
   toast("완료로 표시했습니다.");
 });
 document.addEventListener("submit", (e) => {
