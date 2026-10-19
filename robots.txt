@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /work/
 Disallow: /me/
+Disallow: /rec/
 Disallow: /api/
 
 Sitemap: https://www.stagelogic.kr/sitemap.xml
