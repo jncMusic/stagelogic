@@ -45,6 +45,10 @@ const CONTACT = {
 문의 양식은 서버 없이 방문자의 메일 앱을 열어 위 주소로 보내는 방식입니다.
 나중에 문의를 바로 받아 두고 싶으면 Formspree 같은 양식 서비스나 Firebase로 바꿀 수 있습니다.
 
+## 테스트
+
+`npm test` — `tests/`의 API 테스트(노션 · 저장소는 `tests/fake.mjs`가 흉내)를 모두 돌립니다. 새 세션용 안내는 `CLAUDE.md`.
+
 ## 미리 보기
 
 ```bash

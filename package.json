@@ -3,5 +3,8 @@
   "type": "module",
   "dependencies": {
     "@vercel/blob": "^2.8.1"
+  },
+  "scripts": {
+    "test": "for f in tests/*.test.mjs; do node \"$f\" > /dev/null || { echo \"실패: $f\"; exit 1; }; echo \"통과: $f\"; done"
   }
 }
