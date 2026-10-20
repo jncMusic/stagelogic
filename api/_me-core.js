@@ -7,6 +7,7 @@ import { loadAreaBoard, areaOp } from './_me-areas.js';
 import { loadToday, kst, addDays } from './_me-habit.js';
 import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
 import { sendMail } from './_mail.js';
+import { calUrl } from './_me-cal.js';
 
 export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
 const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
@@ -239,6 +240,8 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         }
         return res.status(200).json({ ...board, me });
       }
+      // 캘린더 구독 주소 (비밀번호로 연 사람에게만 알려 준다)
+      if (req.method === 'GET' && scope === 'calendar') return res.status(200).json({ url: calUrl(env.ME_PASSWORD), me });
       // 메일 미리 받기: 아침 · 저녁 · 주간 메일을 지금 바로 ME_MAIL_TO 로 보낸다
       if (body0.op === 'mail-preview') {
         const lack = [!env.ME_MAIL_TO && 'ME_MAIL_TO', !env.RESEND_API_KEY && 'RESEND_API_KEY'].filter(Boolean);
