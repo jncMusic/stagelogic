@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@600&family=Outfit:wght@500;600&family=Manrope:wght@700;800&family=Space+Mono:wght@700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f3f1ec;font-family:"Pretendard Variable",sans-serif;color:#14151c;padding:56px}
+h1{font-size:34px;margin:0 0 6px;font-weight:700} .sub{color:#6b6a64;margin:0 0 32px;font-size:17px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.card{background:#fff;border:1px solid #e4e1d8;border-radius:22px;padding:30px}
+.card h2{margin:0;font-size:22px} .card p{margin:6px 0 20px;color:#5b5a55;font-size:15px;line-height:1.5}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.box{height:170px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:18px;overflow:hidden}
+.lt{background:#faf9f6;border:1px solid #ece9e1} .dk{background:#14151c}
+.icons{display:flex;align-items:end;gap:18px;margin-top:16px} .icons span{color:#8a8983;font-size:13px;margin-right:6px}
+.kr{margin-top:14px;height:84px}
+</style></head><body>
+<h1>스테이지로직 로고 · 코드 × 무대</h1>
+<p class="sub">코드 기호가 곧 무대가 되도록. 밝은 배경 · 어두운 배경 · 한글 표기 · 아이콘(64 / 32 / 16px)</p>
+<div class="grid" id="g"></div>
+<script>
+const ink="#14151c", gold="#c9a24a", cream="#faf9f6";
+const D = [
+ { id:"G1", name:"중괄호 커튼  { }", desc:"코드의 중괄호 { } 가 양쪽에 드리운 무대 커튼이 됩니다. 아래 금색 선은 무대 바닥.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><text x="18" y="42" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="40" fill="${c}">{</text><text x="46" y="42" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="40" fill="${c}">}</text><rect x="8" y="50" width="48" height="4" rx="2" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:'IBM Plex Sans';font-weight:600;font-size:38px;letter-spacing:-.01em;color:${c}">Stage<span style="color:${a}">Logic</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;color:${c}"><span style="font-family:'JetBrains Mono';color:${a}">{</span> 스테이지로직 <span style="font-family:'JetBrains Mono';color:${a}">}</span></div>` },
+ { id:"G2", name:"태그 무대  </>", desc:"코드 태그 &lt;/&gt; 에서 빗금(/)이 무대를 비추는 조명이 되고, 양쪽 꺾쇠는 무대 날개.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M20 18 8 32l12 14M44 18l12 14-12 14" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 10 27 50h10z" fill="${a}"/><rect x="18" y="52" width="28" height="4" rx="2" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:Manrope;font-weight:800;font-size:38px;letter-spacing:-.02em;color:${c}">Stage<span style="color:${a}">Logic</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:800;font-size:32px;color:${c}">스테이지<span style="color:${a}">로직</span></div>` },
+ { id:"G3", name:"커서 무대  >_", desc:"터미널 입력 표시 &gt;_ . 꺾쇠는 무대를 향한 조명, 밑줄은 금색 무대. '이제 시작한다'는 느낌.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M12 16l18 14-18 14" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="32" y="44" width="22" height="7" rx="2" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:'JetBrains Mono';font-weight:800;font-size:36px;letter-spacing:-.03em;color:${c}">stagelogic<span style="display:inline-block;width:.55em;height:.14em;background:${a};margin-left:.08em;vertical-align:-.05em"></span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;color:${c}"><span style="font-family:'JetBrains Mono';color:${a}">&gt;</span> 스테이지로직<span style="display:inline-block;width:.5em;height:.12em;background:${a};margin-left:.1em"></span></div>` },
+ { id:"G4", name:"괄호 무대 2  [ • ]", desc:"이전 E를 다듬었습니다. [ ] 가 무대 양옆 날개, 가운데 금색 점이 주인공, 아래에 무대 바닥.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M22 10H12v38h10M42 10h10v38H42" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/><circle cx="32" cy="34" r="6" fill="${a}"/><rect x="6" y="52" width="52" height="4" rx="2" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="text-align:left"><div style="font-family:Outfit;font-weight:600;font-size:38px;letter-spacing:-.01em;color:${c};line-height:1">StageLogic</div><div style="font-family:'IBM Plex Mono';font-weight:500;font-size:14px;color:${a};margin-top:8px">stage.logic()</div></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;color:${c}">스테이지로직 <span style="font-family:'IBM Plex Mono';font-size:15px;color:${a}">stage.logic()</span></div>` },
+ { id:"G5", name:"아치 속 코드", desc:"이전 B의 공연장 아치 안에 &lt;/&gt; 를 세웠습니다. 공연장 + 코드가 한눈에.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M10 56V30a22 22 0 0 1 44 0v26" fill="none" stroke="${a}" stroke-width="4"/><path d="M25 32l-7 7 7 7M39 32l7 7-7 7M35 29l-6 20" fill="none" stroke="${c}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+   word:(c,a)=>`<div style="font-family:Outfit;font-weight:600;font-size:26px;letter-spacing:.12em;color:${c}">STAGE<span style="color:${a}">LOGIC</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;letter-spacing:.06em;color:${c}">스테이지<span style="color:${a}">로직</span></div>` },
+ { id:"G6", name:"코드 계단 무대", desc:"들여쓰기 된 코드 세 줄이 계단처럼 쌓여 무대(단상)가 됩니다. 맨 위 금색 줄이 무대.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><rect x="22" y="16" width="34" height="7" rx="3.5" fill="${a}"/><rect x="15" y="29" width="41" height="7" rx="3.5" fill="${c}"/><rect x="8" y="42" width="48" height="7" rx="3.5" fill="${c}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:'IBM Plex Sans';font-weight:600;font-size:38px;letter-spacing:-.01em;color:${c}">stage<span style="color:${a}">logic</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;color:${c}">스테이지<span style="color:${a}">로직</span></div>` },
+];
+const icon=(d,s)=>`<div style="width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${ink};display:flex;align-items:center;justify-content:center"><div style="transform:scale(${s/64*.82});width:64px;height:64px;flex:none">${d.mark(cream,gold)}</div></div>`;
+document.getElementById("g").innerHTML = D.map(d=>`<div class="card"><h2>${d.id} · ${d.name}</h2><p>${d.desc}</p>
+ <div class="row"><div class="box lt">${d.mark(ink,gold)}${d.word(ink,gold)}</div><div class="box dk">${d.mark(cream,gold)}${d.word(cream,gold)}</div></div>
+ <div class="row"><div class="box lt kr">${d.kr(ink,gold)}</div><div class="icons"><span>아이콘</span>${icon(d,64)}${icon(d,32)}${icon(d,16)}</div></div></div>`).join("");
+</script></body></html>

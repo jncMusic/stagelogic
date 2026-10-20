@@ -73,6 +73,10 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://www.stagelogic.kr` 기준입니다.
 페이지를 새로 만들면 `sitemap.xml` 에도 한 줄 추가해 주세요.
 
+## 로고 · 브랜드
+
+확정 로고(K2, `</>` × 무대)와 색 · 글씨 · 쓰는 법 · 시안 기록은 [`design/logo/README.md`](design/logo/README.md). 파일은 `assets/brand/`.
+
 ## 업무 흐름 (`/work/`)
 
 회사 내부용 업무 관리 화면입니다. 비밀번호를 넣어야 열리고, 검색엔진에는 노출되지 않습니다.

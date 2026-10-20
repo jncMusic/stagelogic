@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@500;600&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Space+Grotesk:wght@500;600&family=Manrope:wght@700;800&family=Gowun+Batang:wght@700&family=Noto+Serif+KR:wght@600&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f3f1ec;font-family:"Pretendard Variable",sans-serif;color:#14151c;padding:56px}
+h1{font-size:34px;margin:0 0 6px;font-weight:700} .sub{color:#6b6a64;margin:0 0 32px;font-size:17px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.card{background:#fff;border:1px solid #e4e1d8;border-radius:22px;padding:30px}
+.card h2{margin:0;font-size:22px} .card p{margin:6px 0 20px;color:#5b5a55;font-size:15px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.box{height:170px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:16px}
+.lt{background:#faf9f6;border:1px solid #ece9e1} .dk{background:#14151c}
+.icons{display:flex;align-items:end;gap:18px;margin-top:16px} .icons span{color:#8a8983;font-size:13px;margin-right:6px}
+.kr{margin-top:14px;height:84px}
+</style></head><body>
+<h1>스테이지로직 로고 · 새 방향 6가지</h1>
+<p class="sub">밝은 배경 · 어두운 배경 · 아이콘(64 / 32 / 16px) · 한글 표기. 방향만 고르면 그 안에서 다듬습니다.</p>
+<div class="grid" id="g"></div>
+<script>
+const ink="#14151c", gold="#c9a24a", cream="#faf9f6";
+const D = [
+ { id:"A", name:"무대 위 한 줄", desc:"세리프 글자가 금색 무대 선 위에 섭니다. 클래식 공연의 품위.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><text x="32" y="44" text-anchor="middle" font-family="Fraunces" font-weight="600" font-size="46" fill="${c}">S</text><rect x="8" y="50" width="48" height="3" rx="1.5" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:Fraunces;font-weight:500;font-size:40px;letter-spacing:-.01em;color:${c};line-height:1;border-bottom:3px solid ${a};padding-bottom:8px">StageLogic</div>`,
+   kr:(c,a)=>`<div style="font-family:'Noto Serif KR';font-weight:600;font-size:34px;color:${c};border-bottom:3px solid ${a};padding-bottom:6px">스테이지로직</div>`, bgI:ink, fgI:cream },
+ { id:"B", name:"프로시니엄 아치", desc:"공연장 무대 틀(아치) 안의 SL. 반듯한 기하 글꼴로 믿음직하게.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M12 56V28a20 20 0 0 1 40 0v28" fill="none" stroke="${a}" stroke-width="4"/><text x="32" y="50" text-anchor="middle" font-family="Outfit" font-weight="600" font-size="22" fill="${c}">SL</text></svg>`,
+   word:(c,a)=>`<div style="font-family:Outfit;font-weight:600;font-size:26px;letter-spacing:.12em;color:${c}">STAGE<span style="color:${a}">LOGIC</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:32px;letter-spacing:.08em;color:${c}">스테이지<span style="color:${a}">로직</span></div>`, bgI:ink, fgI:cream },
+ { id:"C", name:"막이 오르는 순간", desc:"양쪽으로 걷히는 커튼. 우아한 세리프 이탤릭. 버건디 색으로 공연장 느낌.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M8 8h48v4H8z" fill="${a}"/><path d="M8 12h18c-2 16-8 30-18 44z" fill="${a}"/><path d="M56 12H38c2 16 8 30 18 44z" fill="${a}"/><circle cx="32" cy="46" r="4" fill="${c}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:'Cormorant Garamond';font-size:50px;color:${c};line-height:1"><span style="font-weight:600">Stage</span><span style="font-style:italic;font-weight:500;color:${a}">Logic</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Gowun Batang';font-weight:700;font-size:34px;color:${c}">스테이지<span style="color:${a}">로직</span></div>`, bgI:"#5e1622", fgI:"#f6e7d8", acc:"#8e2433", accD:"#d9a0a6" },
+ { id:"D", name:"스포트라이트", desc:"위에서 떨어지는 한 줄기 빛과 무대 위 한 점. 담백한 현대 글꼴, 소문자.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M28 6h8l14 46H14z" fill="${a}" opacity=".9"/><ellipse cx="32" cy="53" rx="20" ry="4" fill="${a}"/><circle cx="32" cy="44" r="5" fill="${c}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:'Space Grotesk';font-weight:500;font-size:42px;letter-spacing:-.03em;color:${c}">stage<span style="color:${a}">logic</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:600;font-size:34px;letter-spacing:-.03em;color:${c}">스테이지<span style="color:${a}">로직</span></div>`, bgI:ink, fgI:cream },
+ { id:"E", name:"괄호 무대", desc:"[ ] 괄호가 무대 양옆이 되고, 가운데 한 점이 주인공. '기획 · 논리'를 담은 IT 느낌.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M22 12H12v40h10M42 12h10v40H42" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/><circle cx="32" cy="32" r="7" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="font-family:Manrope;font-weight:800;font-size:34px;letter-spacing:-.02em;color:${c}">Stage<span style="color:${a}">[</span>Logic<span style="color:${a}">]</span></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:800;font-size:34px;color:${c}">스테이지<span style="color:${a}">[</span>로직<span style="color:${a}">]</span></div>`, bgI:ink, fgI:cream, acc:"#2a78d6", accD:"#7fb0ee" },
+ { id:"F", name:"한글 중심", desc:"한글 '스테이지로직'을 주인공으로. 아이콘은 '스' 한 글자와 금색 무대.",
+   mark:(c,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><text x="32" y="44" text-anchor="middle" font-family="Pretendard Variable" font-weight="800" font-size="38" fill="${c}">스</text><rect x="12" y="50" width="40" height="5" rx="2.5" fill="${a}"/></svg>`,
+   word:(c,a)=>`<div style="text-align:left"><div style="font-family:'Pretendard Variable';font-weight:800;font-size:38px;letter-spacing:-.04em;color:${c};line-height:1">스테이지로직</div><div style="font-family:Outfit;font-weight:500;font-size:13px;letter-spacing:.42em;color:${a};margin-top:8px">STAGELOGIC</div></div>`,
+   kr:(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:800;font-size:30px;letter-spacing:-.04em;color:${c}">스테이지로직 <span style="font-family:Outfit;font-weight:500;font-size:14px;letter-spacing:.3em;color:${a}">COMPANY</span></div>`, bgI:ink, fgI:cream },
+];
+const icon=(d,s)=>{const a=d.acc||gold; return `<div style="width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${d.bgI};display:flex;align-items:center;justify-content:center"><div style="transform:scale(${s/64*.82});transform-origin:center;width:64px;height:64px;flex:none">${d.mark(d.fgI, d.accD||a)}</div></div>`};
+document.getElementById("g").innerHTML = D.map(d=>{const a=d.acc||gold, aD=d.accD||gold; return `<div class="card"><h2>${d.id} · ${d.name}</h2><p>${d.desc}</p>
+ <div class="row"><div class="box lt">${d.mark(ink,a)}${d.word(ink,a)}</div><div class="box dk">${d.mark(cream,aD)}${d.word(cream,aD)}</div></div>
+ <div class="row"><div class="box lt kr">${d.kr(ink,a)}</div><div class="icons"><span>아이콘</span>${icon(d,64)}${icon(d,32)}${icon(d,16)}</div></div></div>`}).join("");
+</script></body></html>
