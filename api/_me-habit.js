@@ -51,11 +51,13 @@ export async function loadToday({ notion, dbId, P, items, meta, env = process.en
   const byId = Object.fromEntries(items.map((i) => [i.id, i]));
   const top = (day.top || []).map((id) => byId[id]).filter(Boolean).map((i) => ({ ...pick(i), check: day.check?.[i.id] || null }));
   const yd = days[addDays(today, -1)];
-  const yesterdayMissed = Boolean(yd && (yd.top || []).some((id) => byId[id] && byId[id].status !== 'done' && !yd.check?.[id]));
+  // 어제 오늘의 3가지 중 점검하지 않고 남은 일 — '오늘' 칸에서 바로 정리한다
+  const yesterday = yd ? (yd.top || []).map((id) => byId[id]).filter((i) => i && i.status !== 'done' && !yd.check?.[i.id]).map(pick) : [];
+  const yesterdayMissed = yesterday.length > 0;
   const revisit = items.filter((i) => i.status !== 'done' && i.due && gap(i.due, today) > REVISIT_DAYS)
     .sort((a, b) => a.due.localeCompare(b.due)).map((i) => ({ ...pick(i), late: gap(i.due, today) }));
   const suggest = top.length ? [] : suggestTop(items, today).map(pick);
-  return { today, inbox, top, suggest, revisit, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, perDay };
+  return { today, inbox, top, suggest, revisit, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, yesterday, perDay };
 }
 
 // 주간 리뷰에 쓰는 지난 7일 점검 기록
