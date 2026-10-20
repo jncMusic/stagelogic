@@ -18,6 +18,8 @@ export const MAX_LOG = 30;
 export const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
 export const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
 
+const NOTION_ID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/;
+
 export const text = (v, max) => String(v ?? '').trim().slice(0, max);
 export const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
 
@@ -56,6 +58,8 @@ export function cleanItem(raw, areaKeys) {
     deps: deps.filter((d) => d !== id),
     log,
     updatedAt: raw.updatedAt || new Date().toISOString(),
+    // 노션 Action_DB 페이지와 이어 둔 업무: 페이지 id, 마지막으로 맞춘 노션 수정 시각
+    ...(NOTION_ID.test(String(raw.notion || '')) ? { notion: String(raw.notion), notionSeen: text(raw.notionSeen, 40) } : {}),
   };
 }
 
@@ -83,7 +87,33 @@ function whoIs(req, env) {
 
 export const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
 
-export function createHandler(store, env = process.env) {
+// 노션에서 바뀐 단계를 가져온다. 바뀐 것이 없으면 null
+async function pullNotion(sync, items, now) {
+  if (!sync || !items.some((i) => i.notion)) return null;
+  let pages;
+  try { pages = await sync.pull(); } catch (err) { console.error('checklist notion pull', err); return null; }
+  let changed = false;
+  const next = items.map((i) => {
+    const n = i.notion && pages[i.notion];
+    if (!n || n.edited === i.notionSeen) return i;
+    changed = true;
+    if (n.status === i.status) return { ...i, notionSeen: n.edited };
+    return logged({ ...i, status: n.status, notionSeen: n.edited, updatedAt: now }, '노션', now, `상태: ${STATUS_NAME[i.status]} → ${STATUS_NAME[n.status]}`);
+  });
+  return changed ? next : null;
+}
+
+// /work/ 에서 단계가 바뀐 이어 둔 업무를 노션에 쓴다 (실패해도 /work/ 저장은 그대로)
+async function pushNotion(sync, before, after) {
+  if (!sync) return after;
+  const was = Object.fromEntries(before.map((i) => [i.id, i.status]));
+  return Promise.all(after.map(async (i) => {
+    if (!i.notion || was[i.id] === undefined || was[i.id] === i.status) return i;
+    try { return { ...i, notionSeen: await sync.push(i.notion, i.status) }; } catch (err) { console.error('checklist notion push', err); return i; }
+  }));
+}
+
+export function createHandler(store, env = process.env, sync = null) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex');
@@ -99,9 +129,13 @@ export function createHandler(store, env = process.env) {
       const loaded = await store.load();
       const areas = cleanAreas(loaded.areas);
       const keys = areas.map((a) => a.key);
-      const items = (loaded.items || []).map((i) => cleanItem(i, keys));
+      let items = (loaded.items || []).map((i) => cleanItem(i, keys));
       const reply = (data) => res.status(200).json({ ...data, me });
-      if (req.method === 'GET') return reply({ items, areas });
+      if (req.method === 'GET') {
+        const pulled = await pullNotion(sync, items, new Date().toISOString());
+        if (pulled) { items = pulled; await store.save({ items, areas }, loaded.versions || [], KEEP_VERSIONS); }
+        return reply({ items, areas });
+      }
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -169,10 +203,23 @@ export function createHandler(store, env = process.env) {
           next = body.items.map((i) => cleanItem(i, k)).filter((i) => i.title);
           break;
         }
+        case 'link': {
+          // 노션 페이지와 잇기: { links: { 업무 id: 노션 페이지 id 또는 '' (끊기) } }
+          if (!body.links || typeof body.links !== 'object') return res.status(400).json({ error: 'bad_request' });
+          const links = body.links;
+          if (Object.entries(links).some(([id, pg]) => !has(id) || (pg !== '' && !NOTION_ID.test(String(pg))))) return res.status(400).json({ error: 'bad_request' });
+          next = items.map((i) => {
+            if (!(i.id in links)) return i;
+            const { notion, notionSeen, ...rest } = i;
+            return links[i.id] ? { ...rest, notion: String(links[i.id]), notionSeen: '' } : rest;
+          });
+          break;
+        }
         default:
           return res.status(400).json({ error: 'unknown_op' });
       }
 
+      if (body.op === 'status' || body.op === 'update') next = await pushNotion(sync, items, next);
       await store.save({ items: next, areas: nextAreas }, loaded.versions || [], KEEP_VERSIONS);
       return reply({ items: next, areas: nextAreas });
     } catch (err) {

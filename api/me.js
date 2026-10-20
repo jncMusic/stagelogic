@@ -3,8 +3,7 @@
 import { makeBlobStore } from './_store.js';
 import { notionClient } from './_notion.js';
 import { createMeHandler } from './_me-core.js';
-
-const ACTION_DB = '18f46c00-a29b-80c2-8feb-dd7a67f76b84';
+import { ACTION_DB } from './_checklist-notion.js';
 
 export default createMeHandler({
   notion: notionClient(process.env.NOTION_TOKEN || ''),
