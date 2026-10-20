@@ -961,7 +961,12 @@ document.addEventListener("click", (e) => {
   if (t.closest("[data-topset]")) { const ids = [...pickTop]; pickTop = new Set(); tdayOp({ op: "top-set", ids }, "오늘의 3가지를 정했습니다."); return; }
   if (t.closest("[data-topreset]")) { pickTop = new Set(tday.top.map((i) => i.id)); tdayOp({ op: "top-set", ids: [] }); return; }
   const tri = t.closest("[data-triage]");
-  if (tri) { const li = tri.closest("[data-inbox]"); tdayOp({ op: "triage", id: li.dataset.inbox, area: tri.dataset.triage, due: $(".td-date", li).value }, "흐름표로 옮겼습니다."); return; }
+  if (tri) {
+    const li = tri.closest("[data-inbox]"); const due = $(".td-date", li).value;
+    // 날짜가 없으면 캘린더에 안 보이므로 한 번 묻는다
+    if (!due && !confirm("마감일 없이 옮길까요?\n날짜가 없으면 캘린더에 나오지 않습니다.")) { $(".td-date", li).focus(); return; }
+    tdayOp({ op: "triage", id: li.dataset.inbox, area: tri.dataset.triage, due }, "흐름표로 옮겼습니다."); return;
+  }
   const sk = t.closest("[data-inskip]"); if (sk) { tdayOp({ op: "inbox-skip", id: sk.closest("[data-inbox]").dataset.inbox }, "안 하기로 했습니다."); return; }
   const ck = t.closest("[data-check]");
   if (ck) {
