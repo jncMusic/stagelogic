@@ -138,9 +138,9 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
     const day = days[d] || (days[d] = { top: [], check: {} });
     let metaChanged = false;
     // 캘린더(노션 '날짜')에 보이도록: 오늘 할 일로 고르면 오늘 날짜를, 내일로 미루면 내일 날짜를 붙인다
-    const tomorrow = addDays(d, 1);
     const onToday = (it) => (!it.due ? { due: d } : it.due > d && !(it.start && it.start <= d) ? { start: d } : null);
-    const onTomorrow = (it) => (it.start === d ? (it.due > tomorrow ? { start: tomorrow } : { start: '', due: tomorrow }) : !it.due || it.due <= d ? { due: tomorrow } : null);
+    // from 날짜에 하려던 일을 다음 날로
+    const nextDay = (it, from) => { const to = addDays(from, 1); return it.start === from ? (it.due > to ? { start: to } : { start: '', due: to }) : !it.due || it.due <= from ? { due: to } : null; };
     const note = (it, line) => { const m = meta[it.id] || {}; meta[it.id] = { ...m, log: [...(m.log || []), { at: now, by: me, text: line }].slice(-MAX_LOG) }; metaChanged = true; };
     switch (body.op) {
       case 'capture': {
@@ -175,15 +175,21 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         break;
       }
       case 'check': {
-        // 오늘의 3가지 점검: 완료 / 내일로(이유) / 보류(이유)
+        // 오늘의 3가지 점검: 완료 / 내일로(이유) / 보류(이유). day: 'yesterday' 면 어제 남은 일 (내일로 = 오늘로)
         if (!cur || !['done', 'tomorrow', 'hold'].includes(body.result)) return 'bad_request';
+        const past = body.day === 'yesterday';
+        const on = past ? addDays(d, -1) : d;
+        const rec = past ? days[on] : day;
+        if (!rec || (past && !(rec.top || []).includes(cur.id))) return 'bad_request';
         const why = text(body.why, 200);
         if (body.result !== 'done' && !why) return 'reason_required';
         if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
-        if (body.result === 'tomorrow') { const f = onTomorrow(cur); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
+        if (body.result === 'tomorrow') { const f = nextDay(cur, on); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
         if (body.result === 'hold') await notion.update(cur.id, toProps({ status: 'blocked' }, areas, cur));
-        day.check = { ...(day.check || {}), [cur.id]: { r: body.result, why, at: now } };
-        note(cur, body.result === 'done' ? '점검: 완료' : `점검: ${body.result === 'tomorrow' ? '내일로' : '보류'} — ${why}`);
+        rec.check = { ...(rec.check || {}), [cur.id]: { r: body.result, why, at: now } };
+        const label = body.result === 'tomorrow' ? (past ? '오늘로' : '내일로') : '보류';
+        note(cur, `${past ? '어제 점검' : '점검'}: ${body.result === 'done' ? '완료' : `${label} — ${why}`}`);
+        metaChanged = true;
         break;
       }
       case 'revisit': {

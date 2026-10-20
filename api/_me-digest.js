@@ -22,7 +22,7 @@ export function buildMorning(t, items, areas) {
   const late = open.filter((i) => i.due && i.due < today && !t.revisit.some((r) => r.id === i.id));
   const due = open.filter((i) => i.due === today);
   const body = `<h2 style="margin:4px 0;font-size:20px">${t.top.length ? '오늘의 3가지' : '오늘의 3가지를 정하세요'}</h2>
-    ${t.yesterdayMissed ? '<p style="margin:6px 0;color:#b02a2a;font-weight:700">어제 점검을 하지 않았습니다. 흐름표에서 먼저 정리해 주세요.</p>' : ''}
+    ${t.yesterdayMissed ? `<p style="margin:6px 0;color:#b02a2a;font-weight:700">어제 점검을 하지 않았습니다. 흐름표 '오늘' 칸에서 먼저 정리해 주세요.</p>${sec('어제 남은 일', (t.yesterday || []).map((i) => row(areas, i)), '#b02a2a')}` : ''}
     ${t.top.length ? `<ol style="margin:6px 0;padding-left:20px">${t.top.map((i) => `<li>${row(areas, i)}</li>`).join('')}</ol>`
       : `<p style="margin:6px 0;color:#555">추천 (흐름표에서 골라 확정하세요)</p><ol style="margin:0;padding-left:20px">${t.suggest.slice(0, 3).map((i) => `<li>${row(areas, i)}</li>`).join('')}</ol>`}
     ${sec('다시 정할 일 (3일 넘게 밀림)', t.revisit.map((i) => row(areas, i, ` · <b style="color:#b02a2a">${i.late}일 지남</b>`)), '#b02a2a')}
