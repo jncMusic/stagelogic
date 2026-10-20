@@ -87,6 +87,41 @@ p { margin: 0 0 1em; }
 .hero p.lead { font-size: clamp(1.05rem, 2vw, 1.25rem); color: #c9c8d2; max-width: 620px; }
 .hero .actions { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
 
+/* 홈 첫 화면: 사업별 3분할 입구 */
+.gate {
+  background: radial-gradient(ellipse at 50% 0%, #3a2f1a 0%, transparent 60%), var(--ink);
+  color: var(--white); padding: 72px 0 80px;
+}
+.gate-head { margin-bottom: 36px; }
+.gate-head h1 { font-size: clamp(1.9rem, 4.2vw, 3rem); font-weight: 800; margin-bottom: 10px; }
+.gate-head h1 em { font-style: normal; color: var(--gold); }
+.gate-head p { color: #c9c8d2; font-size: clamp(1rem, 1.8vw, 1.15rem); margin: 0; }
+.gate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.gate-card {
+  --c: var(--gold);
+  display: flex; flex-direction: column; min-height: 380px; padding: 32px 28px;
+  text-decoration: none; color: var(--white); border-radius: var(--radius);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 22%, transparent), var(--ink-2) 65%);
+  border: 1px solid rgba(255,255,255,.08); border-top: 5px solid var(--c);
+  transition: transform .2s, border-color .2s, background .2s;
+}
+.gate-card.stage { --c: var(--stage); }
+.gate-card.web { --c: var(--web); }
+.gate-card.solution { --c: var(--solution); }
+.gate-card:hover, .gate-card:focus-visible { transform: translateY(-4px); border-color: var(--c); background: linear-gradient(180deg, color-mix(in srgb, var(--c) 38%, transparent), var(--ink-2) 75%); }
+.gate-card .tag { font-size: .78rem; letter-spacing: .14em; font-weight: 700; text-transform: uppercase; color: #e6e4ec; margin-bottom: 18px; }
+.gate-card strong { font-size: clamp(1.35rem, 2.2vw, 1.7rem); line-height: 1.4; letter-spacing: -0.02em; margin-bottom: 16px; }
+.gate-card .desc { color: #c9c8d2; font-size: .98rem; }
+.gate-card .go { margin-top: auto; padding-top: 24px; font-weight: 700; color: var(--gold); }
+.gate-card .go::after { content: " →"; transition: margin .2s; }
+.gate-card:hover .go::after { margin-left: 6px; }
+@media (max-width: 860px) {
+  .gate { padding: 48px 0 56px; }
+  .gate-grid { grid-template-columns: 1fr; gap: 12px; }
+  .gate-card { min-height: 0; padding: 24px 22px; }
+  .gate-card strong br { display: none; }
+}
+
 .btn {
   display: inline-block; text-decoration: none; font-weight: 700;
   padding: 14px 24px; border-radius: 999px; border: 1px solid transparent;
