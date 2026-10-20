@@ -31,6 +31,7 @@ export function notionClient(token, fetchImpl = fetch) {
       } while (cursor && out.length < 1000);
       return out;
     },
+    page: (pageId) => call('GET', `/pages/${pageId}`),
     create: (databaseId, properties) => call('POST', '/pages', { parent: { database_id: databaseId }, properties }),
     update: (pageId, properties) => call('PATCH', `/pages/${pageId}`, { properties }),
     archive: (pageId) => call('PATCH', `/pages/${pageId}`, { archived: true }),

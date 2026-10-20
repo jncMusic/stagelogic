@@ -58,8 +58,9 @@ export function cleanItem(raw, areaKeys) {
     deps: deps.filter((d) => d !== id),
     log,
     updatedAt: raw.updatedAt || new Date().toISOString(),
-    // 노션 Action_DB 페이지와 이어 둔 업무: 페이지 id, 마지막으로 맞춘 노션 수정 시각
-    ...(NOTION_ID.test(String(raw.notion || '')) ? { notion: String(raw.notion), notionSeen: text(raw.notionSeen, 40) } : {}),
+    // 노션 Action_DB 페이지와 이어 둔 업무 (_checklist-notion.js)
+    ...(raw.notion && NOTION_ID.test(String(raw.notion.id || ''))
+      ? { notion: { id: String(raw.notion.id), seen: text(raw.notion.seen, 40), dl: Boolean(raw.notion.dl), dirty: Boolean(raw.notion.dirty) } } : {}),
   };
 }
 
@@ -87,32 +88,6 @@ function whoIs(req, env) {
 
 export const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
 
-// 노션에서 바뀐 단계를 가져온다. 바뀐 것이 없으면 null
-async function pullNotion(sync, items, now) {
-  if (!sync || !items.some((i) => i.notion)) return null;
-  let pages;
-  try { pages = await sync.pull(); } catch (err) { console.error('checklist notion pull', err); return null; }
-  let changed = false;
-  const next = items.map((i) => {
-    const n = i.notion && pages[i.notion];
-    if (!n || n.edited === i.notionSeen) return i;
-    changed = true;
-    if (n.status === i.status) return { ...i, notionSeen: n.edited };
-    return logged({ ...i, status: n.status, notionSeen: n.edited, updatedAt: now }, '노션', now, `상태: ${STATUS_NAME[i.status]} → ${STATUS_NAME[n.status]}`);
-  });
-  return changed ? next : null;
-}
-
-// /work/ 에서 단계가 바뀐 이어 둔 업무를 노션에 쓴다 (실패해도 /work/ 저장은 그대로)
-async function pushNotion(sync, before, after) {
-  if (!sync) return after;
-  const was = Object.fromEntries(before.map((i) => [i.id, i.status]));
-  return Promise.all(after.map(async (i) => {
-    if (!i.notion || was[i.id] === undefined || was[i.id] === i.status) return i;
-    try { return { ...i, notionSeen: await sync.push(i.notion, i.status) }; } catch (err) { console.error('checklist notion push', err); return i; }
-  }));
-}
-
 export function createHandler(store, env = process.env, sync = null) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
@@ -132,7 +107,7 @@ export function createHandler(store, env = process.env, sync = null) {
       let items = (loaded.items || []).map((i) => cleanItem(i, keys));
       const reply = (data) => res.status(200).json({ ...data, me });
       if (req.method === 'GET') {
-        const pulled = await pullNotion(sync, items, new Date().toISOString());
+        const pulled = sync && await sync.reconcile(items, areas, new Date().toISOString());
         if (pulled) { items = pulled; await store.save({ items, areas }, loaded.versions || [], KEEP_VERSIONS); }
         return reply({ items, areas });
       }
@@ -183,6 +158,10 @@ export function createHandler(store, env = process.env, sync = null) {
         }
         case 'delete': {
           if (!has(body.id)) return res.status(404).json({ error: 'not_found' });
+          const gone = items.find((i) => i.id === body.id);
+          if (sync && gone.notion) {
+            try { await sync.remove(gone.notion.id); } catch (err) { console.error('checklist notion remove', err); return res.status(502).json({ error: 'notion_error' }); }
+          }
           next = items.filter((i) => i.id !== body.id)
             .map((i) => (i.deps.includes(body.id) ? { ...i, deps: i.deps.filter((d) => d !== body.id) } : i));
           break;
@@ -210,8 +189,8 @@ export function createHandler(store, env = process.env, sync = null) {
           if (Object.entries(links).some(([id, pg]) => !has(id) || (pg !== '' && !NOTION_ID.test(String(pg))))) return res.status(400).json({ error: 'bad_request' });
           next = items.map((i) => {
             if (!(i.id in links)) return i;
-            const { notion, notionSeen, ...rest } = i;
-            return links[i.id] ? { ...rest, notion: String(links[i.id]), notionSeen: '' } : rest;
+            const { notion: _old, ...rest } = i;
+            return links[i.id] ? { ...rest, notion: { id: String(links[i.id]), seen: '', dl: false, dirty: false } } : rest;
           });
           break;
         }
@@ -219,7 +198,7 @@ export function createHandler(store, env = process.env, sync = null) {
           return res.status(400).json({ error: 'unknown_op' });
       }
 
-      if (body.op === 'status' || body.op === 'update') next = await pushNotion(sync, items, next);
+      if (sync && body.op !== 'link') next = await sync.afterWrite(items, next, areas, nextAreas, body.op);
       await store.save({ items: next, areas: nextAreas }, loaded.versions || [], KEEP_VERSIONS);
       return reply({ items: next, areas: nextAreas });
     } catch (err) {
