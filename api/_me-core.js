@@ -137,6 +137,10 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
     const days = meta._days || (meta._days = {});
     const day = days[d] || (days[d] = { top: [], check: {} });
     let metaChanged = false;
+    // 캘린더(노션 '날짜')에 보이도록: 오늘 할 일로 고르면 오늘 날짜를, 내일로 미루면 내일 날짜를 붙인다
+    const tomorrow = addDays(d, 1);
+    const onToday = (it) => (!it.due ? { due: d } : it.due > d && !(it.start && it.start <= d) ? { start: d } : null);
+    const onTomorrow = (it) => (it.start === d ? (it.due > tomorrow ? { start: tomorrow } : { start: '', due: tomorrow }) : !it.due || it.due <= d ? { due: tomorrow } : null);
     const note = (it, line) => { const m = meta[it.id] || {}; meta[it.id] = { ...m, log: [...(m.log || []), { at: now, by: me, text: line }].slice(-MAX_LOG) }; metaChanged = true; };
     switch (body.op) {
       case 'capture': {
@@ -160,7 +164,12 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         break;
       case 'top-set': {
         const ids = (Array.isArray(body.ids) ? body.ids : []).filter((id) => items.some((i) => i.id === id)).slice(0, 3);
+        const before = new Set(day.top || []);
         day.top = [...new Set(ids)];
+        for (const id of day.top.filter((x) => !before.has(x))) {
+          const it = items.find((i) => i.id === id); const f = onToday(it);
+          if (f) { await notion.update(id, toProps(f, areas, it)); note(it, `오늘의 3가지: 날짜 ${f.start || f.due}`); }
+        }
         day.check = Object.fromEntries(Object.entries(day.check || {}).filter(([id]) => day.top.includes(id)));
         metaChanged = true;
         break;
@@ -171,7 +180,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         const why = text(body.why, 200);
         if (body.result !== 'done' && !why) return 'reason_required';
         if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
-        if (body.result === 'tomorrow') await notion.update(cur.id, toProps({ due: addDays(d, 1) }, areas, cur));
+        if (body.result === 'tomorrow') { const f = onTomorrow(cur); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
         if (body.result === 'hold') await notion.update(cur.id, toProps({ status: 'blocked' }, areas, cur));
         day.check = { ...(day.check || {}), [cur.id]: { r: body.result, why, at: now } };
         note(cur, body.result === 'done' ? '점검: 완료' : `점검: ${body.result === 'tomorrow' ? '내일로' : '보류'} — ${why}`);

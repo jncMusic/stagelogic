@@ -18,6 +18,8 @@ export const MAX_LOG = 30;
 export const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
 export const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
 
+const NOTION_ID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/;
+
 export const text = (v, max) => String(v ?? '').trim().slice(0, max);
 export const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
 
@@ -56,6 +58,9 @@ export function cleanItem(raw, areaKeys) {
     deps: deps.filter((d) => d !== id),
     log,
     updatedAt: raw.updatedAt || new Date().toISOString(),
+    // 노션 Action_DB 페이지와 이어 둔 업무 (_checklist-notion.js)
+    ...(raw.notion && NOTION_ID.test(String(raw.notion.id || ''))
+      ? { notion: { id: String(raw.notion.id), seen: text(raw.notion.seen, 40), dl: Boolean(raw.notion.dl), dirty: Boolean(raw.notion.dirty) } } : {}),
   };
 }
 
@@ -83,7 +88,7 @@ function whoIs(req, env) {
 
 export const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
 
-export function createHandler(store, env = process.env) {
+export function createHandler(store, env = process.env, sync = null) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex');
@@ -99,9 +104,13 @@ export function createHandler(store, env = process.env) {
       const loaded = await store.load();
       const areas = cleanAreas(loaded.areas);
       const keys = areas.map((a) => a.key);
-      const items = (loaded.items || []).map((i) => cleanItem(i, keys));
+      let items = (loaded.items || []).map((i) => cleanItem(i, keys));
       const reply = (data) => res.status(200).json({ ...data, me });
-      if (req.method === 'GET') return reply({ items, areas });
+      if (req.method === 'GET') {
+        const pulled = sync && await sync.reconcile(items, areas, new Date().toISOString());
+        if (pulled) { items = pulled; await store.save({ items, areas }, loaded.versions || [], KEEP_VERSIONS); }
+        return reply({ items, areas });
+      }
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
       const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -149,6 +158,10 @@ export function createHandler(store, env = process.env) {
         }
         case 'delete': {
           if (!has(body.id)) return res.status(404).json({ error: 'not_found' });
+          const gone = items.find((i) => i.id === body.id);
+          if (sync && gone.notion) {
+            try { await sync.remove(gone.notion.id); } catch (err) { console.error('checklist notion remove', err); return res.status(502).json({ error: 'notion_error' }); }
+          }
           next = items.filter((i) => i.id !== body.id)
             .map((i) => (i.deps.includes(body.id) ? { ...i, deps: i.deps.filter((d) => d !== body.id) } : i));
           break;
@@ -169,10 +182,23 @@ export function createHandler(store, env = process.env) {
           next = body.items.map((i) => cleanItem(i, k)).filter((i) => i.title);
           break;
         }
+        case 'link': {
+          // 노션 페이지와 잇기: { links: { 업무 id: 노션 페이지 id 또는 '' (끊기) } }
+          if (!body.links || typeof body.links !== 'object') return res.status(400).json({ error: 'bad_request' });
+          const links = body.links;
+          if (Object.entries(links).some(([id, pg]) => !has(id) || (pg !== '' && !NOTION_ID.test(String(pg))))) return res.status(400).json({ error: 'bad_request' });
+          next = items.map((i) => {
+            if (!(i.id in links)) return i;
+            const { notion: _old, ...rest } = i;
+            return links[i.id] ? { ...rest, notion: { id: String(links[i.id]), seen: '', dl: false, dirty: false } } : rest;
+          });
+          break;
+        }
         default:
           return res.status(400).json({ error: 'unknown_op' });
       }
 
+      if (sync && body.op !== 'link') next = await sync.afterWrite(items, next, areas, nextAreas, body.op);
       await store.save({ items: next, areas: nextAreas }, loaded.versions || [], KEEP_VERSIONS);
       return reply({ items: next, areas: nextAreas });
     } catch (err) {
