@@ -1,0 +1,45 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=Cormorant+Garamond:ital,wght@0,600;1,500&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f3f1ec;font-family:"Pretendard Variable",sans-serif;color:#14151c;padding:56px}
+h1{font-size:34px;margin:0 0 6px;font-weight:700} .sub{color:#6b6a64;margin:0 0 28px;font-size:17px;line-height:1.6}
+.card{background:#fff;border:1px solid #e4e1d8;border-radius:22px;padding:28px;margin-bottom:24px}
+.card h2{margin:0;font-size:21px} .card p{margin:6px 0 16px;color:#5b5a55;font-size:15px}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.box{height:130px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:14px;overflow:hidden;position:relative}
+.box i{position:absolute;left:12px;top:8px;font-style:normal;font-size:12px;color:#9a988f}
+.lt{background:#faf9f6;border:1px solid #ece9e1} .dk{background:#14151c}
+.foot{display:flex;align-items:center;gap:16px;margin-top:12px} .foot>span{color:#8a8983;font-size:12px}
+</style></head><body>
+<h1>스테이지로직 로고 · G2 모양 × 버건디</h1>
+<p class="sub">상징은 G2의 &lt;/&gt; 모양, 색은 버건디(꺾쇠) + 금색(빗금 · 바닥). 글씨는 H4 · H5에서 쓴 두 가지 — 넓은 대문자(Outfit) / 세리프(Cormorant).</p>
+<div id="g"></div>
+<script>
+const ink="#14151c", gold="#c9a24a", cream="#faf9f6", wine="#8e2433", wineD="#e0939d";
+const D=[
+ { id:"K1", name:"G2 그대로 + 버건디", desc:"G2 모양 그대로. 꺾쇠는 버건디, 가운데 빗금과 바닥은 금색.",
+   mark:(w,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M20 18 8 32l12 14M44 18l12 14-12 14" fill="none" stroke="${w}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 10 27 50h10z" fill="${a}"/><rect x="18" y="52" width="28" height="4" rx="2" fill="${a}"/></svg>` },
+ { id:"K2", name:"빗금을 곧은 선으로", desc:"가운데를 쐐기 대신 곧은 빗금으로. 코드 기호 &lt;/&gt; 에 더 가깝고 단정합니다.",
+   mark:(w,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M20 18 8 32l12 14M44 18l12 14-12 14" fill="none" stroke="${w}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M37 12 27 48" fill="none" stroke="${a}" stroke-width="5.5" stroke-linecap="round"/><rect x="14" y="53" width="36" height="4" rx="2" fill="${a}"/></svg>` },
+ { id:"K3", name:"꺾쇠를 커튼처럼", desc:"꺾쇠를 면으로 채워 양옆 커튼처럼 보이게. 버건디가 더 넓게 보입니다.",
+   mark:(w,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M23 14 7 32l16 18h-7.5L4 32 15.5 14z" fill="${w}"/><path d="M41 14l16 18-16 18h7.5L60 32 48.5 14z" fill="${w}"/><path d="M36 10 27 50h10z" fill="${a}"/><rect x="16" y="53" width="32" height="4" rx="2" fill="${a}"/></svg>` },
+ { id:"K4", name:"위에 휘장 막대", desc:"G2 위쪽에 금색 막대(커튼 봉)를 얹어 '무대'를 한 번 더. 아래 바닥과 위 막대가 무대 틀이 됩니다.",
+   mark:(w,a)=>`<svg width="64" height="64" viewBox="0 0 64 64"><rect x="10" y="6" width="44" height="4" rx="2" fill="${a}"/><path d="M20 20 9 33l11 13M44 20l11 13-11 13" fill="none" stroke="${w}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 14 27.5 50h9z" fill="${a}"/><rect x="10" y="53" width="44" height="4" rx="2" fill="${a}"/></svg>` },
+];
+const wordB=(c,a)=>`<div style="font-family:Outfit;font-weight:600;font-size:19px;letter-spacing:.13em;color:${c}">STAGE<span style="color:${a}">LOGIC</span></div>`;
+const wordC=(c,a)=>`<div style="font-family:'Cormorant Garamond';font-size:36px;color:${c};line-height:1"><span style="font-weight:600">Stage</span><span style="font-style:italic;font-weight:500;color:${a}">Logic</span></div>`;
+const kr=(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:22px;letter-spacing:.05em;color:${c}">스테이지<span style="color:${a}">로직</span></div>`;
+const icon=(d,s,bg,w,a)=>`<div style="width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${bg};display:flex;align-items:center;justify-content:center;border:1px solid #e4e1d8"><div style="transform:scale(${s/64*.84});width:64px;height:64px;flex:none">${d.mark(w,a)}</div></div>`;
+document.getElementById("g").innerHTML=D.map(d=>`<div class="card"><h2>${d.id} · ${d.name}</h2><p>${d.desc}</p>
+<div class="row">
+ <div class="box lt"><i>넓은 대문자</i>${d.mark(wine,gold)}${wordB(ink,wine)}</div>
+ <div class="box dk"><i>넓은 대문자</i>${d.mark(wineD,gold)}${wordB(cream,gold)}</div>
+ <div class="box lt"><i>세리프</i>${d.mark(wine,gold)}${wordC(ink,wine)}</div>
+ <div class="box dk"><i>세리프</i>${d.mark(wineD,gold)}${wordC(cream,gold)}</div>
+</div>
+<div class="foot"><span>아이콘</span>${icon(d,64,wine,cream,gold)}${icon(d,32,wine,cream,gold)}${icon(d,16,wine,cream,gold)}
+ ${icon(d,64,ink,wineD,gold)}${icon(d,32,ink,wineD,gold)}${icon(d,16,ink,wineD,gold)}
+ <span style="margin-left:18px">한 색</span>${icon(d,48,"#fff",ink,ink)}${icon(d,48,ink,"#fff","#fff")}
+ <span style="margin-left:18px">한글</span><div class="box lt" style="height:60px;padding:0 18px;margin:0">${kr(ink,wine)}</div></div></div>`).join("");
+</script></body></html>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 64" width="250" height="64">
+<path d="M32 9 50 44H14z" fill="#c9a24a" opacity=".35"/>
+<circle cx="32" cy="8" r="5" fill="#c9a24a"/>
+<rect x="13" y="46" width="11" height="11" rx="2" fill="#ffffff"/>
+<rect x="26.5" y="46" width="11" height="11" rx="2" fill="#c9a24a"/>
+<rect x="40" y="46" width="11" height="11" rx="2" fill="#ffffff"/>
+<text x="76" y="36" font-family="Inter" font-weight="800" font-size="30" letter-spacing="-0.6" fill="#ffffff">Stage<tspan fill="#c9a24a">Logic</tspan></text>
+<text x="77" y="54" font-family="Inter" font-weight="600" font-size="10.5" letter-spacing="4.2" fill="#ffffff" opacity=".6">COMPANY</text>
+</svg>

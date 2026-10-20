@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=JetBrains+Mono:wght@700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f3f1ec;font-family:"Pretendard Variable",sans-serif;color:#14151c;padding:56px}
+h1{font-size:34px;margin:0 0 6px;font-weight:700} .sub{color:#6b6a64;margin:0 0 32px;font-size:17px;line-height:1.6}
+h3{font-size:22px;margin:36px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.card{background:#fff;border:1px solid #e4e1d8;border-radius:22px;padding:26px}
+.card h2{margin:0;font-size:20px} .card p{margin:6px 0 16px;color:#5b5a55;font-size:14px;line-height:1.5;min-height:42px}
+.box{height:130px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:16px;overflow:hidden;margin-bottom:10px}
+.lt{background:#faf9f6;border:1px solid #ece9e1} .dk{background:#14151c}
+.icons{display:flex;align-items:end;gap:14px;margin-top:6px} .mono{display:flex;gap:10px;margin-left:auto;align-items:end}
+.icons span{color:#8a8983;font-size:12px}
+</style></head><body>
+<h1>스테이지로직 로고 · H4 · H5 다듬기</h1>
+<p class="sub">위: 밝은 배경 + B 글씨(넓은 대문자) · 가운데: 어두운 배경 + C 글씨(세리프) · 아래: 아이콘 64 / 32 / 16px와 한 색 버전(인쇄 · 도장용)</p>
+<h3>H4 · 커튼 사이 커서</h3><div class="grid" id="g4"></div>
+<h3>H5 · 아치 + 커튼 + 코드</h3><div class="grid" id="g5"></div>
+<script>
+const ink="#14151c", gold="#c9a24a", cream="#faf9f6", wine="#8e2433", wineD="#d98b95";
+// 커튼: 안쪽 선이 부드럽게 휘고, 중간에 금색 묶음끈
+const curtL=(w,a,top=11,tie=true)=>`<path d="M6 ${top}H27C26 ${top+14} 22 ${top+24} 16 ${top+30}C13 ${top+34} 10 ${top+40} 6 ${top+45}Z" fill="${w}"/>${tie?`<rect x="13" y="${top+27}" width="7" height="3" rx="1.5" fill="${a}" transform="rotate(-38 16 ${top+28})"/>`:""}`;
+const curtR=(w,a,top=11,tie=true)=>`<g transform="translate(64 0) scale(-1 1)">${curtL(w,a,top,tie)}</g>`;
+const D4=[
+ { id:"H4-1", name:"기본 다듬기", desc:"커튼 안쪽 선을 부드럽게, 묶음끈을 금색으로. 무대 위 커서는 그대로.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="5" fill="${a}"/>${curtL(w,a)}${curtR(w,a)}<rect x="26" y="47" width="12" height="5" rx="1.5" fill="${a}"/></svg>` },
+ { id:"H4-2", name:"커서 + 무대 바닥", desc:"커서 아래에 무대 바닥 선을 깔아 '무대 위에 선 커서'가 더 분명하게.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="5" fill="${a}"/>${curtL(w,a,11,false)}${curtR(w,a,11,false)}<rect x="27" y="40" width="10" height="5" rx="1.5" fill="${c}"/><rect x="6" y="54" width="52" height="3.5" rx="1.75" fill="${a}"/></svg>` },
+ { id:"H4-3", name:"> 커서 (프롬프트)", desc:"커서 앞에 > 를 붙여 터미널 입력 '>_' 로. 코드 느낌을 조금 더.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><rect x="6" y="6" width="52" height="5" fill="${a}"/>${curtL(w,a,11,false)}${curtR(w,a,11,false)}<path d="M24 38l6 5-6 5" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="32" y="46" width="9" height="4" rx="1.2" fill="${a}"/></svg>` },
+];
+const arch=(a,sw=4)=>`<path d="M6 58V30a26 26 0 0 1 52 0v28" fill="none" stroke="${a}" stroke-width="${sw}"/>`;
+const aCurtL=(w)=>`<path d="M10 26c4-10 10-15 16-17-1 18-6 34-16 49z" fill="${w}"/>`, aCurtR=(w)=>`<path d="M54 26c-4-10-10-15-16-17 1 18 6 34 16 49z" fill="${w}"/>`;
+const D5=[
+ { id:"H5-1", name:"기본 다듬기", desc:"&lt;/&gt; 를 굵고 크게 해서 작은 아이콘에서도 읽히게.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64">${arch(a)}${aCurtL(w)}${aCurtR(w)}<path d="M27.5 35l-5 6 5 6M36.5 35l5 6-5 6M34 32l-4 18" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+ { id:"H5-2", name:"H4 + H5 섞기", desc:"아치 + 커튼에 H4의 커서를. &lt;/&gt; 보다 단순해서 작게 써도 깔끔합니다.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64">${arch(a)}${aCurtL(w)}${aCurtR(w)}<rect x="26" y="46" width="12" height="5" rx="1.5" fill="${a}"/></svg>` },
+ { id:"H5-3", name:"&lt;/&gt; 무대 바닥", desc:"아치 아래에 무대 바닥을 두고 그 위에 &lt;/&gt; 가 섭니다. 공연장 정면 모습에 가깝게.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64">${arch(a)}${aCurtL(w)}${aCurtR(w)}<rect x="4" y="54" width="56" height="4" rx="2" fill="${a}"/><path d="M28 34l-5 5.5 5 5.5M36 34l5 5.5-5 5.5M33.5 31.5l-3 16" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+];
+const wordB=(c,a)=>`<div style="font-family:Outfit;font-weight:600;font-size:20px;letter-spacing:.13em;color:${c}">STAGE<span style="color:${a}">LOGIC</span></div>`;
+const wordC=(c,a)=>`<div style="font-family:'Cormorant Garamond';font-size:38px;color:${c};line-height:1"><span style="font-weight:600">Stage</span><span style="font-style:italic;font-weight:500;color:${a}">Logic</span></div>`;
+const icon=(d,s)=>`<div style="width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${ink};display:flex;align-items:center;justify-content:center"><div style="transform:scale(${s/64*.84});width:64px;height:64px;flex:none">${d.mark(cream,gold,wineD)}</div></div>`;
+const mono=(d,col,bg)=>`<div style="width:44px;height:44px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;border:1px solid #e4e1d8"><div style="transform:scale(.62);width:64px;height:64px;flex:none">${d.mark(col,col,col)}</div></div>`;
+const card=(d)=>`<div class="card"><h2>${d.id} · ${d.name}</h2><p>${d.desc}</p>
+ <div class="box lt">${d.mark(ink,gold,wine)}${wordB(ink,gold)}</div><div class="box dk">${d.mark(cream,gold,wineD)}${wordC(cream,gold)}</div>
+ <div class="icons">${icon(d,64)}${icon(d,32)}${icon(d,16)}<div class="mono"><span>한 색</span>${mono(d,ink,"#fff")}${mono(d,"#fff",ink)}</div></div></div>`;
+document.getElementById("g4").innerHTML=D4.map(card).join(""); document.getElementById("g5").innerHTML=D5.map(card).join("");
+</script></body></html>

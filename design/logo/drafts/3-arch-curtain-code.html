@@ -1,0 +1,44 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=JetBrains+Mono:wght@700&family=Gowun+Batang:wght@700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*{box-sizing:border-box} body{margin:0;background:#f3f1ec;font-family:"Pretendard Variable",sans-serif;color:#14151c;padding:56px}
+h1{font-size:34px;margin:0 0 6px;font-weight:700} .sub{color:#6b6a64;margin:0 0 32px;font-size:17px;line-height:1.6}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.card{background:#fff;border:1px solid #e4e1d8;border-radius:22px;padding:30px}
+.card h2{margin:0;font-size:22px} .card p{margin:6px 0 20px;color:#5b5a55;font-size:15px;line-height:1.5}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.box{height:170px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:18px;overflow:hidden;position:relative}
+.box i{position:absolute;left:12px;top:8px;font-style:normal;font-size:12px;color:#9a988f}
+.lt{background:#faf9f6;border:1px solid #ece9e1} .dk{background:#14151c}
+.icons{display:flex;align-items:end;gap:18px;margin-top:16px} .icons span{color:#8a8983;font-size:13px;margin-right:6px}
+.kr{margin-top:14px;height:84px}
+</style></head><body>
+<h1>스테이지로직 로고 · 아치 × 커튼 × 코드</h1>
+<p class="sub">B(공연장 아치)와 C(커튼)를 바탕으로, 코드 기호가 모양 그대로 무대가 되는 것만 골랐습니다.<br>왼쪽 칸은 B 글씨(넓은 대문자), 오른쪽 칸은 C 글씨(세리프 이탤릭) — 상징과 글씨를 따로 고를 수 있습니다.</p>
+<div class="grid" id="g"></div>
+<script>
+const ink="#14151c", gold="#c9a24a", cream="#faf9f6", wine="#8e2433", wineD="#d98b95";
+const brace=(x,y,s,c,ch)=>`<text x="${x}" y="${y}" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="${s}" fill="${c}">${ch}</text>`;
+const D = [
+ { id:"H1", name:"아치 속 중괄호 커튼", desc:"공연장 아치 안에 중괄호 { } 가 양옆으로 묶어 둔 커튼처럼 섭니다. 가운데는 비어 있는 무대.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M8 58V30a24 24 0 0 1 48 0v28" fill="none" stroke="${a}" stroke-width="4"/>${brace(21,47,30,w,"{")}${brace(43,47,30,w,"}")}<rect x="14" y="52" width="36" height="3.5" rx="1.75" fill="${a}"/></svg>` },
+ { id:"H2", name:"괄호 무대 ( )", desc:"마주 선 괄호 두 개가 그대로 무대 입구(아치)가 됩니다. 가운데 금색 점이 무대 위 주인공 — 함수 호출 stage() 처럼.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M26 8C12 16 10 46 22 56M38 8c14 8 16 38 4 48" fill="none" stroke="${w}" stroke-width="5.5" stroke-linecap="round"/><circle cx="32" cy="40" r="5.5" fill="${a}"/><rect x="18" y="54" width="28" height="3.5" rx="1.75" fill="${a}"/></svg>` },
+ { id:"H3", name:"중괄호 휘장", desc:"무대 위쪽 휘장(가로 커튼)을 옆으로 누운 중괄호 ⏞ 모양으로. 양옆으로 커튼이 내려오고 아래는 금색 무대.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M6 20c0-7 4-9 10-9h8c5 0 7-2 8-6 1 4 3 6 8 6h8c6 0 10 2 10 9" fill="none" stroke="${a}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 22h10c-1 12-4 22-10 32z" fill="${w}"/><path d="M56 22H46c1 12 4 22 10 32z" fill="${w}"/><rect x="8" y="54" width="48" height="3.5" rx="1.75" fill="${a}"/></svg>` },
+ { id:"H4", name:"커튼 사이 커서", desc:"C의 걷히는 커튼 사이, 무대 위에 깜빡이는 코드 커서(▁)가 서 있습니다. '막이 오르고 코드가 시작된다'.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M6 6h52v5H6z" fill="${a}"/><path d="M6 11h19c-2 17-8 31-19 45z" fill="${w}"/><path d="M58 11H39c2 17 8 31 19 45z" fill="${w}"/><rect x="26" y="46" width="12" height="6" rx="1.5" fill="${a}"/></svg>` },
+ { id:"H5", name:"아치 + 커튼 + &lt;/&gt;", desc:"아치 안에 커튼을 드리우고, 열린 무대 가운데에 &lt;/&gt; . 공연장 · 커튼 · 코드를 모두 담은 가장 설명적인 안.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M6 58V30a26 26 0 0 1 52 0v28" fill="none" stroke="${a}" stroke-width="4"/><path d="M10 26c4-10 10-15 16-17-1 18-6 34-16 49z" fill="${w}"/><path d="M54 26c-4-10-10-15-16-17 1 18 6 34 16 49z" fill="${w}"/><path d="M28 36l-4 5 4 5M36 36l4 5-4 5M33.5 33l-3 16" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+ { id:"H6", name:"SL 아치 모노그램", desc:"아치 안에 고정폭(코드) 글꼴 SL, 양옆 기둥은 커튼 색. 이니셜 중심이라 도장 · 아이콘으로 쓰기 좋습니다.",
+   mark:(c,a,w)=>`<svg width="64" height="64" viewBox="0 0 64 64"><path d="M10 58V30a22 22 0 0 1 44 0v28" fill="none" stroke="${a}" stroke-width="4"/><rect x="10" y="30" width="5" height="28" fill="${w}"/><rect x="49" y="30" width="5" height="28" fill="${w}"/><text x="32" y="50" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="20" fill="${c}">SL</text></svg>` },
+];
+const wordB=(c,a)=>`<div style="font-family:Outfit;font-weight:600;font-size:25px;letter-spacing:.13em;color:${c}">STAGE<span style="color:${a}">LOGIC</span></div>`;
+const wordC=(c,a)=>`<div style="font-family:'Cormorant Garamond';font-size:46px;color:${c};line-height:1"><span style="font-weight:600">Stage</span><span style="font-style:italic;font-weight:500;color:${a}">Logic</span></div>`;
+const krB=(c,a)=>`<div style="font-family:'Pretendard Variable';font-weight:700;font-size:30px;letter-spacing:.06em;color:${c}">스테이지<span style="color:${a}">로직</span></div>`;
+const icon=(d,s)=>`<div style="width:${s}px;height:${s}px;border-radius:${s*.22}px;background:${ink};display:flex;align-items:center;justify-content:center"><div style="transform:scale(${s/64*.84});width:64px;height:64px;flex:none">${d.mark(cream,gold,wineD)}</div></div>`;
+document.getElementById("g").innerHTML = D.map(d=>`<div class="card"><h2>${d.id} · ${d.name}</h2><p>${d.desc}</p>
+ <div class="row"><div class="box lt"><i>B 글씨</i>${d.mark(ink,gold,wine)}${wordB(ink,gold)}</div><div class="box dk"><i>C 글씨</i>${d.mark(cream,gold,wineD)}${wordC(cream,gold)}</div></div>
+ <div class="row"><div class="box lt kr">${krB(ink,gold)}</div><div class="icons"><span>아이콘</span>${icon(d,64)}${icon(d,32)}${icon(d,16)}</div></div></div>`).join("");
+</script></body></html>

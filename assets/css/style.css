@@ -46,9 +46,8 @@ p { margin: 0 0 1em; }
   color: var(--white);
 }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
-.logo { text-decoration: none; display: flex; align-items: baseline; gap: 8px; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.01em; }
-.logo b { color: var(--gold); font-weight: 800; }
-.logo small { font-size: .72rem; font-weight: 500; color: #a9a8b3; letter-spacing: .08em; }
+.logo { text-decoration: none; display: flex; align-items: center; }
+.logo img { display: block; height: 34px; width: auto; }
 .nav { display: flex; gap: 4px; }
 .nav a { text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: .95rem; color: #d9d8e0; }
 .nav a:hover { color: var(--white); background: rgba(255,255,255,.08); }
@@ -222,7 +221,7 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 /* 꼬리말 */
 .site-footer { background: var(--ink); color: #9f9eaa; padding: 52px 0 40px; font-size: .9rem; }
 .site-footer .foot-brand { margin-bottom: 40px; }
-.site-footer .foot-brand .logo { font-size: .95rem; color: var(--white); }
+.site-footer .foot-brand .logo img { height: 30px; }
 .foot-tagline { color: var(--white); font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 800; letter-spacing: -0.02em; margin: 10px 0 0; }
 .foot-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-bottom: 40px; }
 .foot-cols h2 { color: var(--white); font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
