@@ -1,7 +1,7 @@
 // 홈페이지 문의 양식 → 대표 메일. 보낸 사람의 이메일이 있으면 '답장'이 그 주소로 간다.
 import { escapeHtml as e } from './_mail.js';
 
-const TYPES = { stage: '음악회 · 행사', contest: '대회 · 콩쿠르', web: '홈페이지', classlogic: '클래스로직', etc: '기타' };
+const TYPES = { academy: '학원 개원 · 컨설팅', stage: '음악회 · 행사', contest: '대회 · 콩쿠르', web: '홈페이지', classlogic: '클래스로직', etc: '기타' };
 const MAX_ANSWERS = 30;
 const t = (v, max) => String(v ?? '').trim().slice(0, max);
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

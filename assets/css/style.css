@@ -52,6 +52,7 @@ p { margin: 0 0 1em; }
 .nav a { text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: .95rem; color: #d9d8e0; }
 .nav a:hover { color: var(--white); background: rgba(255,255,255,.08); }
 .nav a[aria-current="page"] { color: var(--gold); }
+.nav .nav-cta[aria-current="page"] { color: var(--ink); }
 .nav .nav-cta { background: var(--gold); color: var(--ink); font-weight: 700; margin-left: 6px; }
 .nav .nav-cta:hover { background: #d8b45e; color: var(--ink); }
 .nav-toggle { display: none; background: none; border: 0; color: var(--white); font-size: 1.5rem; cursor: pointer; padding: 8px; }

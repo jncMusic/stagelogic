@@ -11,6 +11,7 @@
 | 회사 소개 | `/about/` | 이름의 의미, 핵심 가치, 사업 구조, 기업 정보 |
 | 공연기획 | `/stage/` | 서비스 내용, 진행 과정, 사례 |
 | 홈페이지 제작 | `/web/` | 서비스 내용, 제작 과정, 사례 |
+| 학원 솔루션 | `/academy/` | 학원 개원 · 운영 컨설팅, 체크리스트, 패키지 (금액은 상담 후 안내) |
 | 클래스로직 | `/classlogic/` | 기능 소개, 출시 알림 신청 (가칭·출시 예정 표기) |
 | 포트폴리오 | `/portfolio/` | 분야별 거르기 (전체 / 공연기획 / 홈페이지 / 솔루션) |
 | 문의 | `/contact/` | 상담 문의 양식, 연락처 |
@@ -76,6 +77,13 @@ Vercel의 `jncmusic's projects` 팀에 `stagelogic` 프로젝트로 연결되어
 
 각 페이지의 `canonical` · `og:url`, `sitemap.xml`, `robots.txt` 가 모두 `https://www.stagelogic.kr` 기준입니다.
 페이지를 새로 만들면 `sitemap.xml` 에도 한 줄 추가해 주세요.
+링크 공유 미리보기 그림은 `assets/brand/stagelogic-og.png` (1200×630) 입니다.
+
+### 검색 등록 (네이버 · 구글)
+
+1. 네이버 서치어드바이저 · 구글 서치콘솔에 `https://www.stagelogic.kr` 을 등록하고 'HTML 태그' 확인 코드를 받습니다.
+2. 코드를 `index.html` `<head>` 에 `naver-site-verification` · `google-site-verification` 메타 태그로 넣고 배포한 뒤 '확인'을 누릅니다.
+3. 두 곳 모두 사이트맵 `https://www.stagelogic.kr/sitemap.xml` 을 제출합니다.
 
 ## 로고 · 브랜드
 
