@@ -1,8 +1,10 @@
-// 홈 첫 화면 — 코드를 치면 공연장에 불이 켜진다
+// 홈 첫 화면 — 코드를 치면 공연장에 불이 켜진다 (약 2초)
 (() => {
   const duo = document.getElementById('duo');
   const pre = document.getElementById('duo-lines');
   if (!duo || !pre) return;
+  // 스크립트가 돌 때만 숨겼다가 차례로 보여 준다
+  duo.classList.add('anim');
 
   const lines = [
     '<span class="k">const</span> stage = <span class="k">new</span> Stage();',
@@ -39,10 +41,10 @@
     const t = plain(lines[i]);
     if (c <= t.length) {
       render(i, t.slice(0, c++));
-      setTimeout(tick, 38);
+      setTimeout(tick, 12);
     } else {
       i++; c = 0; cue(i);
-      setTimeout(tick, 260);
+      setTimeout(tick, 70);
     }
   };
   tick();
