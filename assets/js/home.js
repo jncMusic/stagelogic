@@ -1,4 +1,4 @@
-// 홈 첫 화면 — 코드를 치면 공연장에 불이 켜진다 (약 2초)
+// 홈 첫 화면 — 코드를 치면 공연장에 불이 켜진다 (약 3초)
 (() => {
   const duo = document.getElementById('duo');
   const pre = document.getElementById('duo-lines');
@@ -41,10 +41,10 @@
     const t = plain(lines[i]);
     if (c <= t.length) {
       render(i, t.slice(0, c++));
-      setTimeout(tick, 12);
+      setTimeout(tick, 20);
     } else {
       i++; c = 0; cue(i);
-      setTimeout(tick, 70);
+      setTimeout(tick, 120);
     }
   };
   tick();
