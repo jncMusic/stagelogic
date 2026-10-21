@@ -536,16 +536,19 @@ const owners = () => [...new Set(["대표", "Claude", "함께", ...items.map((i)
 let dueOnly = "";
 const isOver = (i) => i.status !== "done" && i.due && daysBetween(TODAY(), i.due) < 0;
 const isSoon = (i) => i.status !== "done" && i.due && daysBetween(TODAY(), i.due) >= 0 && daysBetween(TODAY(), i.due) <= 3;
-function visible() {
+// 고른 분야 · 태그 · 담당 · 검색어 안에 드는지 (위쪽 마감 알림 숫자도 이 안에서 센다)
+function inScope(i) {
   const q = ui.q.trim().toLowerCase();
-  return items.filter((i) =>
-    (!dueOnly || (dueOnly === "over" ? isOver(i) : isSoon(i))) &&
-    (!ui.areas.length || ui.areas.includes(i.area)) &&
+  return (!ui.areas.length || ui.areas.includes(i.area)) &&
     (!ui.tags.length || ui.tags.includes(i.tag)) &&
     (!ui.owners.length || ui.owners.includes(i.owner)) &&
+    (!q || `${i.title} ${i.detail} ${i.note} ${i.owner} ${i.tag || ""}`.toLowerCase().includes(q));
+}
+function visible() {
+  return items.filter((i) => inScope(i) &&
+    (!dueOnly || (dueOnly === "over" ? isOver(i) : isSoon(i))) &&
     (!ui.statuses.length || ui.statuses.includes(i.status)) &&
-    (!ui.hideDone || i.status !== "done") &&
-    (!q || `${i.title} ${i.detail} ${i.note} ${i.owner} ${i.tag || ""}`.toLowerCase().includes(q)));
+    (!ui.hideDone || i.status !== "done"));
 }
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title, "ko");
 function orderBetween(prev, next) {
@@ -611,7 +614,7 @@ function renderSummary() {
   }).join("");
 }
 function renderAlerts() {
-  const open = items.filter((i) => i.status !== "done");
+  const open = items.filter((i) => i.status !== "done" && inScope(i));
   const over = open.filter(isOver);
   const soon = open.filter(isSoon);
   if (dueOnly && !(dueOnly === "over" ? over : soon).length) dueOnly = "";
