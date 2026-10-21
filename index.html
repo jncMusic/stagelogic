@@ -15,13 +15,15 @@
   <meta name="theme-color" content="#12131a">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@900&family=Nanum+Myeongjo:wght@800&family=JetBrains+Mono:wght@400&display=swap">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/home.css">
 </head>
-<body>
+<body class="home">
   <a class="skip" href="#main">본문 바로가기</a>
   <header class="site-header">
     <div class="wrap">
-      <a class="logo" href="/" aria-label="스테이지로직 컴퍼니 홈"><img src="/assets/brand/stagelogic-logo-dark.svg" alt="StageLogic 스테이지로직" width="142" height="34"></a>
+      <a class="logo" href="/" aria-label="스테이지로직 컴퍼니 홈"><img src="/assets/brand/stagelogic-logo.svg" alt="StageLogic 스테이지로직" width="142" height="34"></a>
       <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="메뉴 열기">☰</button>
       <nav class="nav" id="site-nav" aria-label="주 메뉴">
         <a href="/about/">회사 소개</a>
@@ -35,31 +37,17 @@
   </header>
 
   <main id="main">
-    <section class="gate">
-      <div class="wrap gate-head">
-        <span class="eyebrow">StageLogic Company</span>
-        <h1>코드를 <em>예술로</em></h1>
+    <section class="duo" id="duo" aria-label="코드를 예술로">
+      <div class="duo-side duo-code">
+        <pre class="duo-lines" id="duo-lines" aria-hidden="true"></pre>
+        <h1><span>코드를</span> <span class="sr">예술로</span></h1>
+        <p class="duo-cap"><a href="/web/">홈페이지 제작</a><a href="/classlogic/">학원 솔루션 클래스로직</a></p>
       </div>
-      <div class="wrap">
-        <div class="gate-grid">
-          <a class="gate-card" href="/stage/">
-            <span class="tag">공연기획</span>
-            <strong>막을 올리다</strong>
-            <span class="desc">기업 음악회 · 경연대회</span>
-          </a>
-          <a class="gate-card" href="/web/">
-            <span class="tag">홈페이지</span>
-            <strong>문을 열다</strong>
-            <span class="desc">협회 · 단체 · 학원 홈페이지</span>
-          </a>
-          <a class="gate-card" href="/classlogic/">
-            <span class="tag">클래스로직</span>
-            <strong>일손을 덜다</strong>
-            <span class="desc">학원 관리 앱</span>
-          </a>
-        </div>
-        <p class="gate-proof"><span>스무 번의 막</span> · <span>열세 해의 교실</span> · <span>빠르되 흔들림 없이</span></p>
+      <div class="duo-side duo-stage">
+        <div class="duo-word" aria-hidden="true">예술로</div>
+        <p class="duo-cap"><a href="/stage/">공연기획</a></p>
       </div>
+      <div class="duo-floor"></div>
     </section>
 
     <section class="block alt">
@@ -175,5 +163,6 @@
     </div>
   </footer>
   <script src="/assets/js/site.js"></script>
+  <script src="/assets/js/home.js"></script>
 </body>
 </html>

@@ -1,0 +1,85 @@
+/* 홈 첫 화면: 흰 코드 × 검은 공연장 (가로 대비) */
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 머리말은 첫 화면 위에 투명하게 얹는다 */
+.home .site-header { position: absolute; left: 0; right: 0; background: transparent; backdrop-filter: none; }
+.home .site-header .wrap { max-width: none; padding: 0 56px; height: 84px; }
+.home .nav { gap: 2px; }
+.home .nav a { color: #d8d6d0; padding: 8px 11px; }
+.home .nav a:hover { color: var(--white); background: rgba(255,255,255,.08); }
+.home .nav .nav-cta, .home .nav .nav-cta:hover { color: var(--ink); background: var(--gold); }
+
+.duo { position: relative; display: grid; grid-template-columns: 1fr 1fr; min-height: max(640px, 100vh); }
+.duo-side { position: relative; display: flex; flex-direction: column; justify-content: center; padding: 0 56px; }
+.duo-code { background: #fafaf7; color: var(--ink); align-items: flex-end; text-align: right; }
+.duo-stage { background: #0b0b0d; color: var(--white); overflow: hidden; }
+
+/* 조명 */
+.duo-stage::before {
+  content: ""; position: absolute; left: 18%; top: -10%; width: 64%; height: 115%;
+  background: radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,240,205,.30), rgba(255,240,205,.06) 60%, transparent 78%);
+  opacity: 0; transition: opacity 1.6s ease;
+}
+.duo.lit .duo-stage::before { opacity: 1; }
+
+/* 무대 바닥: 두 쪽을 가로지르는 금색 선 */
+.duo-floor {
+  position: absolute; left: 0; right: 0; bottom: 96px; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold) 50%, var(--gold));
+  transform-origin: right; transform: scaleX(0); transition: transform 1.4s cubic-bezier(.2,.7,.2,1);
+}
+.duo.on-floor .duo-floor { transform: scaleX(1); }
+
+/* 코드 줄 */
+.duo-lines {
+  position: absolute; right: 56px; bottom: calc(50% + 96px); margin: 0;
+  font: 400 15px/2 "JetBrains Mono", monospace; color: #9b978f; text-align: left;
+}
+.duo-lines .n { color: #c9c5bd; margin-right: 18px; }
+.duo-lines .k { color: var(--burgundy, #8e2433); }
+.duo-lines .s { color: #7a6a3e; }
+.duo-lines .ln { display: block; min-height: 2em; }
+.duo-lines .caret { display: inline-block; width: 9px; height: 18px; background: var(--ink); vertical-align: -3px; animation: duo-blink 1s steps(1) infinite; }
+@keyframes duo-blink { 50% { opacity: 0; } }
+
+/* 슬로건: 고딕(코드) → 명조(예술) */
+.duo h1, .duo-word { margin: 0; line-height: 1; font-size: clamp(64px, 10.5vw, 168px); }
+.duo h1 { font-family: "Gothic A1", var(--font); font-weight: 900; letter-spacing: -.04em; }
+.duo-word {
+  font-family: "Nanum Myeongjo", serif; font-weight: 800; letter-spacing: -.02em;
+  opacity: 0; transform: translateY(14px); transition: opacity 1.2s ease .3s, transform 1.2s ease .3s;
+  text-shadow: 0 0 40px rgba(255,230,180,.25);
+}
+.duo.raised .duo-word { opacity: 1; transform: none; }
+
+/* 무대 바닥 아래 세 사업 */
+.duo-cap { position: absolute; bottom: 34px; margin: 0; font-size: .85rem; letter-spacing: .02em; }
+.duo-code .duo-cap { right: 56px; color: #6d6a64; }
+.duo-stage .duo-cap { left: 56px; color: #bdb8ad; }
+.duo-cap a { text-decoration: none; margin-left: 22px; }
+.duo-stage .duo-cap a { margin: 0 22px 0 0; }
+.duo-cap a:hover { color: var(--gold); }
+
+@media (max-width: 1100px) {
+  .home .nav a[href="/portfolio/"] { display: none; }
+  .home .nav a { padding: 8px 8px; font-size: .9rem; }
+}
+@media (max-width: 860px) {
+  .home .site-header .wrap { padding: 0 20px; height: 68px; }
+  .home .nav-toggle { color: var(--ink); }
+  .home .nav a { color: #d9d8e0; }
+  .home .nav a[href="/portfolio/"] { display: block; }
+  .duo { grid-template-columns: 1fr; min-height: 0; }
+  .duo-side { padding: 0 22px; }
+  .duo-code { align-items: flex-start; text-align: left; padding-top: 96px; padding-bottom: 72px; }
+  .duo-stage { min-height: 56vh; padding-top: 72px; padding-bottom: 72px; }
+  .duo-lines { position: static; font-size: 12.5px; margin-bottom: 22px; }
+  .duo-floor { bottom: 64px; }
+  .duo-code .duo-cap { left: 22px; right: auto; }
+  .duo-stage .duo-cap { left: 22px; }
+  .duo-cap a { margin: 0 16px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .duo-stage::before, .duo-floor, .duo-word { transition: none; }
+}

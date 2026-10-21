@@ -87,34 +87,6 @@ p { margin: 0 0 1em; }
 .hero p.lead { font-size: clamp(1.05rem, 2vw, 1.25rem); color: #c9c8d2; max-width: 620px; }
 .hero .actions { margin-top: 36px; display: flex; gap: 12px; flex-wrap: wrap; }
 
-/* 홈 첫 화면: 슬로건 + 세 사업 */
-.gate {
-  background: radial-gradient(ellipse at 70% 0%, #3a2f1a 0%, transparent 55%), var(--ink);
-  color: var(--white); padding: 110px 0 72px;
-}
-.gate-head { margin-bottom: 72px; }
-.gate-head h1 { font-size: clamp(2.8rem, 8vw, 5.4rem); font-weight: 800; letter-spacing: -0.03em; margin: 0; }
-.gate-head h1 em { font-style: normal; color: var(--gold); }
-.gate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.gate-card {
-  display: flex; flex-direction: column; padding: 24px 26px 26px;
-  text-decoration: none; color: var(--white); border-radius: var(--radius);
-  background: var(--ink-2); border: 1px solid rgba(255,255,255,.08); border-top: 3px solid var(--gold);
-  transition: transform .2s, border-color .2s, background .2s;
-}
-.gate-card:hover, .gate-card:focus-visible { transform: translateY(-3px); border-color: var(--gold); background: var(--ink-3); }
-.gate-card .tag { font-size: .85rem; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
-.gate-card strong { font-size: clamp(1.4rem, 2.4vw, 1.75rem); letter-spacing: -0.02em; margin-bottom: 6px; }
-.gate-card .desc { color: #a9a8b3; font-size: .95rem; }
-.gate-proof span { white-space: nowrap; }
-.gate-proof { margin: 28px 0 0; color: #a9a8b3; font-size: .95rem; letter-spacing: .04em; }
-@media (max-width: 860px) {
-  .gate { padding: 72px 0 48px; }
-  .gate-head { margin-bottom: 48px; }
-  .gate-grid { grid-template-columns: 1fr; gap: 10px; }
-  .gate-card { padding: 18px 20px; }
-}
-
 .btn {
   display: inline-block; text-decoration: none; font-weight: 700;
   padding: 14px 24px; border-radius: 999px; border: 1px solid transparent;
