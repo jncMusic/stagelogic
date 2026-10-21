@@ -130,6 +130,7 @@ textarea.input { resize: vertical; min-height: 72px; line-height: 1.55; }
 .alert.soon { background: var(--warn-soft); color: var(--warn-ink); }
 .alert.block { background: var(--bad-soft); color: var(--bad-ink); }
 .alert.mine { border-color: var(--line-2); color: var(--fg-2); }
+.alert[aria-pressed="true"] { border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; }
 
 main { flex: 1; padding: 12px 16px 60px; min-width: 0; }
 
@@ -531,9 +532,14 @@ const colorOf = (k) => {
 };
 const score = (list) => list.length ? list.reduce((s, i) => s + (i.status === "done" ? 1 : i.status === "doing" ? .5 : 0), 0) / list.length : 0;
 const owners = () => [...new Set(["대표", "Claude", "함께", ...items.map((i) => i.owner)].filter(Boolean))];
+// 위쪽 '마감 지남' · '3일 안에 마감'을 누르면 그 업무만 본다 (끝낸 일은 빼고, 저장하지 않음)
+let dueOnly = "";
+const isOver = (i) => i.status !== "done" && i.due && daysBetween(TODAY(), i.due) < 0;
+const isSoon = (i) => i.status !== "done" && i.due && daysBetween(TODAY(), i.due) >= 0 && daysBetween(TODAY(), i.due) <= 3;
 function visible() {
   const q = ui.q.trim().toLowerCase();
   return items.filter((i) =>
+    (!dueOnly || (dueOnly === "over" ? isOver(i) : isSoon(i))) &&
     (!ui.areas.length || ui.areas.includes(i.area)) &&
     (!ui.tags.length || ui.tags.includes(i.tag)) &&
     (!ui.owners.length || ui.owners.includes(i.owner)) &&
@@ -582,7 +588,7 @@ function chip(group, value, label, color) {
 }
 function renderFilters() {
   const f = $("#filters");
-  const any = ui.areas.length || ui.tags.length || ui.owners.length || ui.statuses.length || ui.hideDone;
+  const any = ui.areas.length || ui.tags.length || ui.owners.length || ui.statuses.length || ui.hideDone || dueOnly;
   const usedTags = tags.filter((t) => items.some((i) => i.tag === t.name));
   f.innerHTML = areas.map((a) => chip("areas", a.key, a.name, colorOf(a.key))).join("") +
     (usedTags.length ? `<span class="sep"></span>` + usedTags.map((t) => chip("tags", t.name, "#" + t.name)).join("") : "") +
@@ -606,13 +612,14 @@ function renderSummary() {
 }
 function renderAlerts() {
   const open = items.filter((i) => i.status !== "done");
-  const over = open.filter((i) => i.due && daysBetween(TODAY(), i.due) < 0);
-  const soon = open.filter((i) => i.due && daysBetween(TODAY(), i.due) >= 0 && daysBetween(TODAY(), i.due) <= 3);
+  const over = open.filter(isOver);
+  const soon = open.filter(isSoon);
+  if (dueOnly && !(dueOnly === "over" ? over : soon).length) dueOnly = "";
   const blocked = open.filter((i) => i.status === "blocked");
   const mine = me ? open.filter((i) => i.owner === me && i.status === "doing") : [];
   const a = [];
-  if (over.length) a.push(`<button type="button" class="alert over" data-ids="${over.map((i) => i.id).join(",")}">${ICON.blocked} 마감 지남 ${over.length}</button>`);
-  if (soon.length) a.push(`<button type="button" class="alert soon" data-ids="${soon.map((i) => i.id).join(",")}">3일 안에 마감 ${soon.length}</button>`);
+  if (over.length) a.push(`<button type="button" class="alert over" data-due="over" aria-pressed="${dueOnly === "over"}">${ICON.blocked} 마감 지남 ${over.length}</button>`);
+  if (soon.length) a.push(`<button type="button" class="alert soon" data-due="soon" aria-pressed="${dueOnly === "soon"}">3일 안에 마감 ${soon.length}</button>`);
   if (blocked.length) a.push(`<button type="button" class="alert block" data-st="blocked">${ICON.blocked} 막힘 ${blocked.length}</button>`);
   if (mine.length) a.push(`<button type="button" class="alert mine" data-owner="${esc(me)}">${esc(me)} 진행 중 ${mine.length}</button>`);
   $("#alerts").innerHTML = a.join("");
@@ -865,14 +872,14 @@ document.addEventListener("click", (e) => {
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
   const ch = t.closest("#filters [data-g]");
   if (ch) { const g = ch.dataset.g;
-    if (g === "clear") Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false });
+    if (g === "clear") { Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false }); dueOnly = ""; }
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
     else if (g === "allDone") { ui.allDone = !ui.allDone; saveUi(); refresh(); return; }
     else { const v = ch.dataset.v; ui[g] = ui[g].includes(v) ? ui[g].filter((x) => x !== v) : [...ui[g], v]; }
     saveUi(); render(); return; }
   const sc = t.closest(".sum-card"); if (sc) { const k = sc.dataset.area; ui.areas = ui.areas.length === 1 && ui.areas[0] === k ? [] : [k]; saveUi(); render(); return; }
   const al = t.closest(".alert");
-  if (al) { if (al.dataset.st) { ui.statuses = [al.dataset.st]; } else if (al.dataset.owner) { ui.owners = [al.dataset.owner]; ui.statuses = ["doing"]; } else { ui.view = "list"; ui.sort = ["due", 1]; ui.hideDone = true; } saveUi(); render(); return; }
+  if (al) { if (al.dataset.st) { ui.statuses = [al.dataset.st]; } else if (al.dataset.owner) { ui.owners = [al.dataset.owner]; ui.statuses = ["doing"]; } else { dueOnly = dueOnly === al.dataset.due ? "" : al.dataset.due; if (dueOnly && ui.view !== "list") { ui.view = "list"; ui.sort = ["due", 1]; } } saveUi(); render(); return; }
   const srt = t.closest("[data-sort]"); if (srt) { const k = srt.dataset.sort; ui.sort = [k, ui.sort[0] === k ? -ui.sort[1] : 1]; saveUi(); render(); return; }
   const ah = t.closest(".add-here"); if (ah) { openAdd({ area: ah.dataset.area, status: ah.dataset.status }); return; }
   if (t.closest("[data-close-drawer]") || t === $("#scrim")) { closeDrawer(); return; }
