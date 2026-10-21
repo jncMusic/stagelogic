@@ -15,13 +15,15 @@
   <meta name="theme-color" content="#12131a">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@900&family=Nanum+Myeongjo:wght@800&family=JetBrains+Mono:wght@400&display=swap">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/home.css">
 </head>
-<body>
+<body class="home">
   <a class="skip" href="#main">본문 바로가기</a>
   <header class="site-header">
     <div class="wrap">
-      <a class="logo" href="/" aria-label="스테이지로직 컴퍼니 홈"><img src="/assets/brand/stagelogic-logo-dark.svg" alt="StageLogic 스테이지로직" width="142" height="34"></a>
+      <a class="logo" href="/" aria-label="스테이지로직 컴퍼니 홈"><img src="/assets/brand/stagelogic-logo.svg" alt="StageLogic 스테이지로직" width="142" height="34"></a>
       <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="메뉴 열기">☰</button>
       <nav class="nav" id="site-nav" aria-label="주 메뉴">
         <a href="/about/">회사 소개</a>
@@ -35,113 +37,81 @@
   </header>
 
   <main id="main">
-    <section class="hero">
-      <div class="wrap">
-        <span class="eyebrow">StageLogic Company</span>
-        <h1>어떤 <em>무대</em>를<br>준비하고 계세요?</h1>
-        <p class="lead">임직원이 함께 웃는 연말, 회원에게 소식이 잘 닿는 협회, 수업에만 집중하는 학원. 하고 싶은 일을 들려주시면, 그 일이 되도록 나머지는 저희가 챙깁니다.</p>
-        <div class="actions">
-          <a class="btn btn-gold" href="/contact/">하고 싶은 일 들려주기</a>
-          <a class="btn btn-ghost" href="/portfolio/">다른 분들은 무엇을 했을까</a>
+    <section class="duo" id="duo" aria-label="코드를 예술로">
+      <div class="duo-side duo-code">
+        <pre class="duo-lines" id="duo-lines" aria-hidden="true"></pre>
+        <h1><span>코드를</span> <span class="sr">예술로</span></h1>
+      </div>
+      <div class="duo-side duo-stage">
+        <div class="duo-word" aria-hidden="true">예술로</div>
+      </div>
+      <div class="duo-foot duo-foot-code">
+        <p class="duo-intro"><a href="/classlogic/">학원관리 앱</a><span>·</span><a href="/web/">홈페이지</a><span>·</span><a href="/stage/">음악회 기획/연출</a></p>
+      </div>
+      <div class="duo-foot duo-foot-stage">
+        <a class="btn btn-gold" href="/classlogic/">클래스로직 보기</a>
+        <a class="btn duo-btn-line" href="/contact/">상담 문의</a>
+      </div>
+      <div class="duo-floor"></div>
+    </section>
+
+    <section class="acts" aria-label="하는 일">
+      <article class="act act-code">
+        <div class="act-head">
+          <span class="act-no">01 — ClassLogic</span>
+          <h2>효율적인 학원관리</h2>
         </div>
+        <div class="act-body">
+          <p>출결은 한 번에, 수납은 한눈에, 학부모 연락은 자동으로. 학원의 수업 방식에 맞춰 짓는 학원 관리 앱, 클래스로직.</p>
+          <p class="act-fact">2013년 문을 연 J&amp;C 음악학원이 매일 쓰는 앱</p>
+          <a class="act-link" href="/classlogic/">클래스로직</a>
+        </div>
+      </article>
+      <article class="act act-code">
+        <div class="act-head">
+          <span class="act-no">02 — Web</span>
+          <h2>감각적인 홈페이지</h2>
+        </div>
+        <div class="act-body">
+          <p>검색에 걸리고, 휴대폰에서 읽히고, 공지는 직접 올린다. 단체의 실체가 화면에서도 보이도록.</p>
+          <p class="act-fact">kbaband.kr · jncmusic.kr — 지금도 매일 운영 중</p>
+          <a class="act-link" href="/web/">홈페이지 제작</a>
+        </div>
+      </article>
+      <article class="act act-stage">
+        <div class="act-head">
+          <span class="act-no">03 — Stage</span>
+          <h2>음악회<br>기획/연출 대행</h2>
+        </div>
+        <div class="act-body">
+          <p>연주단체 섭외, 무대, 진행, 정산. 기업 · 지자체 · 단체의 음악회를 한 번에.</p>
+          <p class="act-fact">2020년부터 15개 공연장 · 20번의 공연</p>
+          <a class="act-link" href="/stage/">공연기획</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="works" aria-label="최근 작업">
+      <div class="works-in">
+        <h2 class="works-h">최근 작업</h2>
+        <ol class="works-list">
+          <li><span class="w-kind">공연기획</span><b>제50회 대한민국관악경연대회</b><span class="w-meta">2026. 8. 13 · 부산문화회관 중극장 · 대회 운영 · 결과보고서</span></li>
+          <li><span class="w-kind">홈페이지</span><b><a href="https://kbaband.kr" target="_blank" rel="noopener">한국관악협회</a></b><span class="w-meta">kbaband.kr · 공개 홈페이지 + 사무국 관리 화면</span></li>
+          <li><span class="w-kind">홈페이지</span><b><a href="https://jncmusic.kr" target="_blank" rel="noopener">J&amp;C 음악학원</a></b><span class="w-meta">jncmusic.kr · 교육과정 · 강사 · 시설 · 상담</span></li>
+        </ol>
+        <a class="act-link" href="/portfolio/">포트폴리오 전체</a>
       </div>
     </section>
 
-    <section class="block">
-      <div class="wrap">
-        <div class="section-title">
-          <h2>이런 일을 하고 싶으신가요?</h2>
-          <p>가장 가까운 것을 골라 보세요. 거기서부터 함께 시작합니다.</p>
+    <section class="curtain" aria-label="문의">
+      <div class="curtain-in">
+        <h2>상담 문의</h2>
+        <div class="curtain-pick">
+          <a href="/contact/?type=classlogic">학원관리 앱</a>
+          <a href="/contact/?type=web">홈페이지</a>
+          <a href="/contact/?type=stage">음악회 기획/연출</a>
         </div>
-        <div class="grid grid-3">
-          <article class="card biz-card stage">
-            <div class="tag">Stage · 공연기획</div>
-            <h3>“올해 송년회는 좀 달랐으면 해요”</h3>
-            <p>담당자님은 날짜와 장소만 정해 주세요. 곡 고르기, 연주자, 무대와 음향, 사회, 프로그램북까지 챙겨서, 행사 날엔 객석에 앉아 계시면 됩니다.</p>
-            <a class="more" href="/stage/">어떻게 진행되는지 보기</a>
-          </article>
-          <article class="card biz-card web">
-            <div class="tag">Web · 홈페이지</div>
-            <h3>“찾아오는 사람이 많아졌으면 해요”</h3>
-            <p>네이버에서 찾아지고, 휴대폰으로 보기 편하고, 공지 하나는 직접 올릴 수 있는 홈페이지. 문의가 들어오는 길까지 같이 만듭니다.</p>
-            <a class="more" href="/web/">어떤 홈페이지가 되는지 보기</a>
-          </article>
-          <article class="card biz-card solution">
-            <div class="tag">Solution · 클래스로직</div>
-            <h3>“퇴근 후엔 엑셀을 켜고 싶지 않아요”</h3>
-            <p>출결은 버튼 한 번, 수납과 미납은 한 화면, 학부모 연락은 알아서. 원장님과 강사님이 수업에 쓰는 시간을 돌려드리는 학원 관리 앱입니다.</p>
-            <a class="more" href="/classlogic/">하루가 어떻게 달라지는지 보기</a>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="block alt">
-      <div class="wrap">
-        <div class="section-title">
-          <span class="kicker">처음이셔도 괜찮아요</span>
-          <h2>저희가 먼저 겪어 본 일입니다</h2>
-          <p>처음 여는 음악회, 처음 만드는 홈페이지라도 막막하지 않게. 무대를 올리고, 학원을 운영하고, 홈페이지를 꾸려 오면서 생긴 시행착오는 저희 쪽에서 이미 끝냈습니다.</p>
-        </div>
-        <div class="grid grid-3">
-          <article class="card proof">
-            <div class="proof-we">2013년부터 운영해 온</div>
-            <h3>음악학원의 일하는 방식</h3>
-            <p>출결부와 단톡방, 엑셀에 흩어져 있던 일을 <strong>클래스로직</strong> 하나로 옮겼습니다.</p>
-          </article>
-          <article class="card proof">
-            <div class="proof-we">2020년부터 올린</div>
-            <h3>15개 공연장, 20개 무대</h3>
-            <p>예술의전당부터 기업 회의장, 야외 축제 무대까지. 그 경험이 <strong>공연기획</strong>의 바탕입니다.</p>
-          </article>
-          <article class="card proof">
-            <div class="proof-we">우리가 만든</div>
-            <h3>J&amp;C 음악학원 홈페이지</h3>
-            <p>상담 문의가 실제로 들어오는 학원 홈페이지를 운영하며 쌓은 방법으로 <strong>홈페이지</strong>를 만듭니다.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="wrap">
-        <div class="section-title">
-          <h2>다른 분들은 이런 일을 했어요</h2>
-          <p>무대 위의 일도, 화면 속의 일도 있습니다.</p>
-        </div>
-        <div class="grid grid-3">
-          <article class="card work" data-category="stage">
-            <div class="kind">공연기획</div>
-            <h3>제50회 대한민국관악경연대회</h3>
-            <div class="meta">2026. 8. 13 · 부산문화회관 중극장</div>
-            <p>대회 운영과 결과보고서 작성을 맡았습니다.</p>
-          </article>
-          <article class="card work" data-category="web">
-            <div class="kind">홈페이지 제작</div>
-            <h3>한국관악협회 홈페이지</h3>
-            <div class="meta">kbaband.kr · 공개 홈페이지 + 사무국 관리 화면</div>
-            <p>회원 가입 신청과 게시판을 갖춘 협회 홈페이지와, 사무국이 회원·게시판·배너를 직접 관리하는 관리 화면. 연주회 소식과 일자리 정보는 자동으로 모아 옵니다.</p>
-            <a class="more" href="https://kbaband.kr" target="_blank" rel="noopener">사이트 보기</a>
-          </article>
-          <article class="card work" data-category="web">
-            <div class="kind">홈페이지 제작</div>
-            <h3>J&amp;C 음악학원 홈페이지</h3>
-            <div class="meta">jncmusic.kr · 교육과정 · 강사소개 · 시설 · 소식 · 상담</div>
-            <p>여러 화면으로 구성된 학원 홈페이지를 기획부터 배포까지 만들었습니다.</p>
-            <a class="more" href="https://jncmusic.kr" target="_blank" rel="noopener">사이트 보기</a>
-          </article>
-        </div>
-        <p style="margin-top:28px"><a class="btn btn-line" href="/portfolio/">포트폴리오 전체 보기</a></p>
-      </div>
-    </section>
-
-    <section class="band">
-      <div class="wrap">
-        <div>
-          <h2>아직 막연해도 괜찮아요</h2>
-          <p>몇 가지만 골라 주시면, 저희가 정리해서 먼저 연락드립니다. 1~2분이면 됩니다.</p>
-        </div>
-        <a class="btn btn-dark" href="/contact/">하고 싶은 일 들려주기</a>
+        <p class="curtain-tel">전화 <span data-contact="phone"></span></p>
       </div>
     </section>
   </main>
@@ -189,5 +159,6 @@
     </div>
   </footer>
   <script src="/assets/js/site.js"></script>
+  <script src="/assets/js/home.js"></script>
 </body>
 </html>
