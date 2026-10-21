@@ -89,7 +89,7 @@
 .act-code { background: #fafaf7; color: var(--ink); border-top: 1px solid #e6e3dc; }
 .act-stage { background: #0b0b0d; color: var(--white); }
 .act-no { display: block; font: 400 .8rem/1 "JetBrains Mono", monospace; letter-spacing: .04em; color: #8d8a84; margin-bottom: 22px; }
-.act h2 { margin: 0; line-height: 1.05; font-size: clamp(44px, 6.4vw, 96px); }
+.act h2 { margin: 0; line-height: 1.12; font-size: clamp(40px, 5.6vw, 84px); }
 .act-code h2 { font-family: "Gothic A1", var(--font); font-weight: 900; letter-spacing: -.04em; }
 .act-stage h2 { font-family: "Nanum Myeongjo", serif; font-weight: 800; letter-spacing: -.02em; }
 .act-body { max-width: 460px; padding-bottom: 8px; }
