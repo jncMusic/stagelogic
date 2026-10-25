@@ -1,0 +1,65 @@
+/* 흑백 톤 공통 칸: 첫 화면 외 페이지와 문의 칸 */
+
+.sub-hero { background: #fafaf7; color: var(--ink); padding: 120px 56px 100px; border-bottom: 1px solid #e6e3dc; }
+.sub-no, .sub-h { display: block; font: 400 .8rem/1 "JetBrains Mono", monospace; letter-spacing: .04em; color: #6d6a64; margin: 0 0 22px; }
+.sub-hero h1 { font-family: "Gothic A1", var(--font); font-weight: 900; letter-spacing: -.04em; line-height: 1.08; font-size: clamp(48px, 7.4vw, 112px); margin: 0 0 28px; }
+.sub-lead { font-size: 1.15rem; line-height: 1.8; color: #3c3b40; max-width: 640px; margin: 0; }
+.sub-cta { display: flex; gap: 22px; align-items: center; margin-top: 36px; flex-wrap: wrap; }
+.sub-link { font-weight: 700; text-decoration: none; color: inherit; border-bottom: 2px solid var(--gold); padding-bottom: 3px; }
+.sub-link::after { content: " ↓"; }
+.sub-link:hover { color: var(--gold); }
+
+/* 서비스 · 제품 목록 */
+.sub-list { display: grid; grid-template-columns: 1.4fr 1fr; gap: 64px; background: #fafaf7; padding: 100px 56px; }
+.sub-list ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+.sub-list li { display: grid; gap: 6px; padding: 22px 0; border-bottom: 1px solid #dcd8cf; }
+.sub-list b { font-size: 1.3rem; letter-spacing: -.02em; }
+.sub-list b a { text-decoration: none; border-bottom: 1px solid var(--gold); }
+.sub-list b a:hover { color: var(--gold); }
+.sub-list span { color: #4a494e; }
+
+/* 패키지: 공연장 쪽 검정 */
+.sub-pack { background: #0b0b0d; color: var(--white); padding: 110px 56px; }
+.sub-pack .sub-h { color: #9a968e; }
+.pack-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.pack { border: 1px solid rgba(201,162,74,.45); border-radius: var(--radius); padding: 36px 34px; display: flex; flex-direction: column; }
+.pack h3 { font-family: "Nanum Myeongjo", serif; font-weight: 800; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.02em; margin: 0 0 6px; }
+.pack-for { color: #9a968e; margin: 0 0 22px; }
+.pack ul { list-style: none; margin: 0 0 26px; padding: 0; }
+.pack li { padding: 12px 0; border-top: 1px solid rgba(255,255,255,.12); color: #e4e1da; }
+.pack li::before { content: "— "; color: var(--gold); }
+.pack-price { margin: auto 0 18px; font: 400 .95rem "JetBrains Mono", monospace; color: var(--gold); }
+.pack .btn { align-self: flex-start; }
+
+/* 근거 */
+.sub-proof { background: #fafaf7; color: var(--ink); padding: 100px 56px; }
+.sub-proof ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); }
+.sub-proof li { padding: 26px 24px 8px 0; }
+.sub-proof b { display: block; font-family: "Gothic A1", var(--font); font-weight: 900; font-size: clamp(32px, 3.6vw, 52px); letter-spacing: -.03em; margin-bottom: 8px; }
+.sub-proof span { color: #4a494e; }
+
+/* 문의: 다시 공연장 */
+.curtain { position: relative; background: #0b0b0d; color: var(--white); padding: 140px 56px 120px; overflow: hidden; }
+.curtain::before { content: ""; position: absolute; left: 50%; top: -20%; width: 60%; height: 120%; transform: translateX(-50%);
+  background: radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,240,205,.16), transparent 70%); pointer-events: none; }
+.curtain-in { position: relative; text-align: center; }
+.curtain h2 { font-family: "Nanum Myeongjo", serif; font-weight: 800; font-size: clamp(40px, 6vw, 84px); letter-spacing: -.02em; margin: 0 0 40px; }
+.curtain-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.curtain-pick a { padding: 14px 26px; border: 1px solid rgba(201,162,74,.6); border-radius: 999px; color: var(--white); text-decoration: none; font-weight: 700; transition: background .2s, color .2s; }
+.curtain-pick a:hover { background: var(--gold); color: var(--ink); }
+.curtain-tel { margin: 28px 0 0; color: #9a968e; font-size: .92rem; }
+.curtain-tel a { color: #e4e1da; text-decoration: none; font: 400 1rem "JetBrains Mono", monospace; letter-spacing: .02em; margin-left: 6px; }
+.curtain-tel a:hover { color: var(--gold); }
+.curtain::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gold); }
+
+
+@media (max-width: 860px) {
+  .sub-hero { padding: 96px 22px 72px; }
+  .sub-list { grid-template-columns: 1fr; gap: 48px; padding: 72px 22px; }
+  .sub-pack { padding: 80px 22px; }
+  .pack-grid { grid-template-columns: 1fr; }
+  .pack { padding: 28px 24px; }
+  .sub-proof { padding: 72px 22px; }
+  .sub-proof ol { grid-template-columns: 1fr; }
+  .curtain { padding: 96px 22px 88px; }
+}

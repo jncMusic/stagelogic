@@ -19,7 +19,7 @@
 .duo-stage::before {
   content: ""; position: absolute; left: 18%; top: -10%; width: 64%; height: 115%;
   background: radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,240,205,.30), rgba(255,240,205,.06) 60%, transparent 78%);
-  transition: opacity .8s ease;
+  transition: opacity 1.1s ease;
 }
 .duo.anim:not(.lit) .duo-stage::before { opacity: 0; }
 
@@ -27,7 +27,7 @@
 .duo-floor {
   position: absolute; left: 0; right: 0; bottom: 96px; height: 3px;
   background: linear-gradient(90deg, transparent, var(--gold) 50%, var(--gold));
-  transform-origin: right; transition: transform .7s cubic-bezier(.2,.7,.2,1);
+  transform-origin: right; transition: transform 1s cubic-bezier(.2,.7,.2,1);
 }
 .duo.anim:not(.on-floor) .duo-floor { transform: scaleX(0); }
 
@@ -48,7 +48,7 @@
 .duo h1 { font-family: "Gothic A1", var(--font); font-weight: 900; letter-spacing: -.04em; }
 .duo-word {
   font-family: "Nanum Myeongjo", serif; font-weight: 800; letter-spacing: -.02em;
-  transition: opacity .6s ease .1s, transform .6s ease .1s;
+  transition: opacity .8s ease .1s, transform .8s ease .1s;
   text-shadow: 0 0 40px rgba(255,230,180,.25);
 }
 .duo.anim:not(.raised) .duo-word { opacity: 0; transform: translateY(14px); }
@@ -122,26 +122,12 @@
 .works-list b a:hover { color: var(--gold); }
 .w-meta { color: #6d6a64; font-size: .92rem; }
 
-/* 문의: 다시 공연장 */
-.curtain { position: relative; background: #0b0b0d; color: var(--white); padding: 140px 56px 120px; overflow: hidden; }
-.curtain::before { content: ""; position: absolute; left: 50%; top: -20%; width: 60%; height: 120%; transform: translateX(-50%);
-  background: radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,240,205,.16), transparent 70%); pointer-events: none; }
-.curtain-in { position: relative; text-align: center; }
-.curtain h2 { font-family: "Nanum Myeongjo", serif; font-weight: 800; font-size: clamp(40px, 6vw, 84px); letter-spacing: -.02em; margin: 0 0 40px; }
-.curtain-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.curtain-pick a { padding: 14px 26px; border: 1px solid rgba(201,162,74,.6); border-radius: 999px; color: var(--white); text-decoration: none; font-weight: 700; transition: background .2s, color .2s; }
-.curtain-pick a:hover { background: var(--gold); color: var(--ink); }
-.curtain-tel { margin: 28px 0 0; color: #9a968e; font-size: .92rem; }
-.curtain-tel a { color: #e4e1da; text-decoration: none; font: 400 1rem "JetBrains Mono", monospace; letter-spacing: .02em; margin-left: 6px; }
-.curtain-tel a:hover { color: var(--gold); }
-.curtain::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gold); }
-
 @media (max-width: 860px) {
   .act { grid-template-columns: 1fr; gap: 24px; padding: 80px 22px; }
   .works { padding: 72px 22px; }
   .works-list li { grid-template-columns: 1fr; gap: 4px; }
-  .curtain { padding: 96px 22px 88px; }
 }
 
 /* 홈 꼬리말은 공연장과 같은 검정 */
 .home .site-footer { background: #0b0b0d; }
+.act-link + .act-link { margin-left: 22px; }
