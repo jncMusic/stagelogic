@@ -4,7 +4,7 @@
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
 import { loadAreaBoard, areaOp } from './_me-areas.js';
-import { loadToday, kst, addDays } from './_me-habit.js';
+import { loadToday, kst, addDays, inboxFilter, inboxExclude } from './_me-habit.js';
 import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
 import { sendMail } from './_mail.js';
 import { calUrl } from './_me-cal.js';
@@ -119,7 +119,15 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
     return { areas, tags, items, meta, versions: saved.versions || [] };
   }
   const today = (loaded, now = Date.now()) => loadToday({ notion, dbId, P, items: loaded.items, meta: loaded.meta, env, now });
-  return { loadAll, today };
+  // 수집함 중 날짜가 있는 일 (캘린더 구독용). 끝낸 일은 최근 60일 것만
+  async function inboxDated() {
+    const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
+    const recent = { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] };
+    const pages = await notion.queryAll(dbId, { and: [...inboxFilter(P, env), recent] });
+    const exclude = inboxExclude(env);
+    return pages.map((p) => fromPage(p)).filter((i) => (i.due || i.start) && !exclude.has(i.title)).map(clean);
+  }
+  return { loadAll, today, inboxDated };
 }
 
 const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revisit'];

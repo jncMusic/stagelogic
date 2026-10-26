@@ -34,4 +34,19 @@ const mh = createMeHandler({ notion: fakeNotion(), store: memStore(), dbId: 'db'
 const call = async (pass) => { let code, out; const res = { setHeader() {}, status(c) { code = c; return res; }, json(j) { out = j; return res; } }; await mh({ method: 'GET', url: '/api/me/?scope=calendar', headers: { 'x-checklist-pass': pass } }, res); return { code, out }; };
 assert.equal((await call('nope')).code, 401);
 const c = await call('pw'); assert.equal(c.code, 200); assert.equal(c.out.url, calUrl('pw'));
+// 수집함(분야 빈) 일도 날짜가 있으면 구독에 들어간다. 템플릿 반복 페이지 · 날짜 없는 것은 빠진다
+const { createMeService } = await import('../api/_me-core.js');
+const fn = fakeNotion();
+const dt = (s) => ({ date: { start: s, end: null } });
+await fn.create('db', { '할일 또는 일정': { title: [{ text: { content: '치과 예약' } }] }, 날짜: dt('2026-10-28') });
+await fn.create('db', { '할일 또는 일정': { title: [{ text: { content: '일일 일정표' } }] }, 날짜: dt('2026-10-28') });
+const svc = createMeService({ notion: fn, store: memStore(), dbId: 'db' }, { INBOX_SINCE: '2020-01-01' });
+const inbox = await svc.inboxDated();
+assert.deepEqual(inbox.map((i) => i.title), ['치과 예약']);
+const h2 = createMeCalHandler({ service: svc, env });
+let out2; const res2 = { setHeader() { return res2; }, status() { return res2; }, send(t) { out2 = t; return res2; } };
+await h2({ method: 'GET', url: '/?k=' + calKey('pw'), query: { k: calKey('pw') } }, res2);
+assert.match(out2, /SUMMARY:\[수집함\] 치과 예약\r\nURL/);
+assert.match(out2, /SUMMARY:\[J&C · 수납·급여\] 급여정산/);
+assert.ok(!out2.includes('일일 일정표'));
 console.log('cal ok');

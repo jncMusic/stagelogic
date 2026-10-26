@@ -7,6 +7,13 @@ export const INBOX_SINCE_DEFAULT = '2026-10-18';
 // 노션 템플릿이 날마다 · 주마다 만드는 반복 페이지는 '기록'이 아니라서 수집함에서 뺀다 (INBOX_EXCLUDE 로 더 넣을 수 있음, 쉼표로 구분)
 export const INBOX_EXCLUDE_DEFAULT = ['일일 일정표', '주간 계획', '주마감', '광고관리', '결제안내'];
 const REVISIT_DAYS = 3;
+// 수집함 조건 (분야 빈 것 · 안함 아님 · INBOX_SINCE 이후) — 오늘 칸과 캘린더 구독이 함께 쓴다
+export const inboxFilter = (P, env = process.env) => [
+  { property: P.area, select: { is_empty: true } },
+  { property: P.skip, checkbox: { equals: false } },
+  { timestamp: 'created_time', created_time: { on_or_after: kstStartIso(env.INBOX_SINCE || INBOX_SINCE_DEFAULT) } },
+];
+export const inboxExclude = (env = process.env) => new Set([...INBOX_EXCLUDE_DEFAULT, ...String(env.INBOX_EXCLUDE || '').split(',').map((x) => x.trim()).filter(Boolean)]);
 
 export const kst = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
 export const addDays = (d, n) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
@@ -24,20 +31,12 @@ export function suggestTop(items, today) {
 
 export async function loadToday({ notion, dbId, P, items, meta, env = process.env, now = Date.now() }) {
   const today = kst(now);
-  const since = env.INBOX_SINCE || INBOX_SINCE_DEFAULT;
   const [inboxPages, created] = await Promise.all([
-    notion.queryAll(dbId, {
-      and: [
-        { property: P.area, select: { is_empty: true } },
-        { property: P.done, checkbox: { equals: false } },
-        { property: P.skip, checkbox: { equals: false } },
-        { timestamp: 'created_time', created_time: { on_or_after: kstStartIso(since) } },
-      ],
-    }),
+    notion.queryAll(dbId, { and: [...inboxFilter(P, env), { property: P.done, checkbox: { equals: false } }] }),
     notion.queryAll(dbId, { timestamp: 'created_time', created_time: { on_or_after: new Date(now - 60 * 864e5).toISOString() } }),
   ]);
   const titleOf = (p) => (p.properties?.[P.title]?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)';
-  const exclude = new Set([...INBOX_EXCLUDE_DEFAULT, ...String(env.INBOX_EXCLUDE || '').split(',').map((x) => x.trim()).filter(Boolean)]);
+  const exclude = inboxExclude(env);
   const inbox = inboxPages.map((p) => ({ id: p.id, title: titleOf(p), url: p.url, created: p.created_time })).filter((i) => !exclude.has(i.title))
     .sort((a, b) => String(a.created).localeCompare(String(b.created)));
   const perDay = {};
