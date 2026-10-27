@@ -23,7 +23,7 @@
 |---|---|---|
 | `/` `/about/` `/stage/` `/web/` `/academy/` `/classlogic/` `/portfolio/` `/contact/` | 회사 홈페이지 (홈은 흰 코드 × 검은 공연장, `home.css`·`home.js` / 흑백 공통 칸 `sub.css`) | HTML |
 | `/work/` | 스테이지로직 업무 흐름 (흐름 · 보드 · 일정 · 목록) | Vercel Blob (`api/checklist.js`) |
-| `/me/` | 개인 일정 — J&C · KBA · 개인 · Stagelogic (같은 화면 + 영역 · 오늘 탭) | 노션 Action_DB (`api/me.js`) |
+| `/me/` | 개인 일정 — J&C · KBA · 개인 · Stagelogic (같은 화면 + 달력 · 영역 · 오늘 탭) | 노션 Action_DB (`api/me.js`) |
 | `/rec/` | 휴대폰 홈 화면용 한 줄 기록 | → 노션 |
 | `/api/capture/?k=키&t=내용` | 아이폰 단축어 "시리야, 기록" | → 노션 수집함 |
 | `/api/me-cal/?k=키` | 구글 · 아이폰 캘린더 구독(.ics, 보기 전용) | 노션 |

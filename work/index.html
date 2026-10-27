@@ -190,6 +190,31 @@ main { flex: 1; padding: 12px 16px 60px; min-width: 0; }
 .col-h em { font-style: normal; color: var(--fg-3); font-variant-numeric: tabular-nums; }
 .drop-mark { height: 3px; background: var(--accent); border-radius: 3px; margin: -2px 0; }
 
+/* 달력 (/me/) */
+.cal-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.cal-tools h3 { margin: 0 6px; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.cal-h { padding: 6px 8px; font-size: .74rem; font-weight: 700; color: var(--fg-3); border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.cal-h.sun, .cal-d.sun .cal-n { color: var(--a8); }
+.cal-d { min-height: 104px; padding: 4px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; min-width: 0; cursor: cell; }
+.cal-d:nth-child(7n) { border-right: 0; }
+.cal-d.out { background: var(--surface-2); }
+.cal-d.out > * { opacity: .55; }
+.cal-d.over { background: var(--accent-soft); }
+.cal-n { font-size: .74rem; font-weight: 700; color: var(--fg-2); font-variant-numeric: tabular-nums; padding: 1px 4px; align-self: flex-start; border-radius: 6px; }
+.cal-d.now .cal-n { background: var(--accent); color: #fff; }
+.cal-it { display: block; width: 100%; text-align: left; font: inherit; font-size: .72rem; font-weight: 650; line-height: 1.25; padding: 2px 6px; border-radius: 5px; border: 0; border-left: 3px solid var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab; }
+.cal-it.done { opacity: .5; text-decoration: line-through; }
+.cal-it.blocked { border-left-style: dashed; }
+.cal-it.span { background: color-mix(in srgb, var(--c) 8%, var(--surface)); font-weight: 500; color: var(--fg-2); }
+.cal-d.sel { box-shadow: inset 0 0 0 2px var(--accent); }
+.cal-day { margin-top: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 10px 12px; }
+.cal-day h4 { margin: 0 0 8px; font-size: .9rem; display: flex; align-items: center; gap: 8px; }
+.cal-day h4 .btn { margin-left: auto; }
+.cal-day .cal-it { font-size: .85rem; padding: 6px 8px; margin-bottom: 4px; white-space: normal; }
+.cal-more { font-size: .7rem; color: var(--fg-3); padding: 0 6px; background: none; border: 0; text-align: left; cursor: pointer; }
+@media (max-width: 640px) { .cal-d { min-height: 72px; padding: 2px; } .cal-it { font-size: .64rem; padding: 1px 3px; } .cal-h { padding: 4px; } }
+
 /* 일정 */
 .tl-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 .tl-wrap { display: grid; grid-template-columns: 1fr 260px; gap: 12px; align-items: start; }
@@ -569,7 +594,7 @@ function render() {
   ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas; });
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
-  else ({ flow: renderFlow, board: renderBoard, time: renderTime, list: renderList }[ui.view] || renderFlow)(v);
+  else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList }[ui.view] || renderFlow)(v);
   const sc = v.querySelector(".flow-wrap, .tl, .board, .table-wrap"); if (sc && scroll.x !== null) sc.scrollLeft = scroll.x;
   $$("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === ui.view)));
   $("#owners").innerHTML = owners().map((o) => `<option value="${esc(o)}">`).join("");
@@ -805,6 +830,54 @@ function bindTimeDrag(v, ppd) {
   });
 }
 
+// ───────── 달력 (/me/ 전용) ─────────
+// 마감일(하루짜리는 그날)에 업무를 놓고, 시작일~마감일 기간은 사이 날짜에 옅게 보인다. 끌어 놓으면 날짜가 옮겨진다.
+const CAL_MAX = 4;
+function renderCal(v) {
+  const today = TODAY();
+  const ym = /^\d{4}-\d{2}$/.test(ui.month || "") ? ui.month : today.slice(0, 7);
+  const first = ym + "-01", from = addDays(first, -((parseDay(first).getDay() + 6) % 7)); // 월요일부터
+  const last = addDays(addDays(first, 32).slice(0, 7) + "-01", -1);
+  const weeks = Math.ceil((daysBetween(from, last) + 1) / 7);
+  const list = visible().filter((i) => i.start || i.due);
+  const on = (d) => list.filter((i) => { const s = i.start || i.due, e = i.due || i.start; return s <= d && d <= e; })
+    .sort((a, b) => (b.due === d) - (a.due === d) || (a.status === "done") - (b.status === "done") || byOrder(a, b));
+  const [y, m] = ym.split("-").map(Number);
+  let cells = ["월", "화", "수", "목", "금", "토", "일"].map((w, k) => `<div class="cal-h${k === 6 ? " sun" : ""}">${w}</div>`).join("");
+  for (let k = 0; k < weeks * 7; k++) {
+    const d = addDays(from, k), its = on(d), more = d === calExpand ? 0 : its.length - CAL_MAX;
+    cells += `<div class="cal-d${d.slice(0, 7) !== ym ? " out" : ""}${d === today ? " now" : ""}${d === calExpand ? " sel" : ""}${k % 7 === 6 ? " sun" : ""}" data-day="${d}"><span class="cal-n">${parseDay(d).getDate()}</span>` +
+      its.slice(0, more > 0 ? CAL_MAX - 1 : its.length).map((i) => `<button type="button" class="cal-it ${i.status}${i.due && i.due !== d && i.start ? " span" : ""}" draggable="true" data-open="${esc(i.id)}" style="--c:${colorOf(i.area)}" title="${esc(i.title)}${i.start && i.due ? ` · ${shortDay(i.start)} ~ ${shortDay(i.due)}` : ""} · ${SNAME[i.status]}">${i.status === "done" ? "✓ " : i.status === "blocked" ? "⚠ " : ""}${esc(i.title)}</button>`).join("") +
+      (more > 0 ? `<button type="button" class="cal-more" data-calday="${d}">+${more + 1}건 더</button>` : "") + `</div>`;
+  }
+  const undated = visible().filter((i) => !i.start && !i.due && i.status !== "done").length;
+  v.innerHTML = `<div class="cal-tools"><button class="btn" type="button" data-cal="-1" aria-label="이전 달">‹</button><h3>${y}년 ${m}월</h3><button class="btn" type="button" data-cal="1" aria-label="다음 달">›</button><button class="btn ghost" type="button" data-cal="0">오늘</button>
+    <span class="msg">빈 칸을 누르면 그날 마감으로 새 업무, 업무를 끌어 다른 날에 놓으면 날짜가 옮겨집니다.${undated ? ` 날짜 없는 업무 ${undated}건은 '일정' 탭 오른쪽에 있습니다.` : ""}</span></div>
+    <div class="cal">${cells}</div>${calExpand ? calDay(on(calExpand)) : ""}`;
+}
+// 고른 날의 업무 전체 (휴대폰에서는 칸이 좁아 여기서 본다)
+function calDay(its) {
+  const d = parseDay(calExpand), w = "일월화수목금토"[d.getDay()];
+  return `<div class="cal-day"><h4>${d.getMonth() + 1}월 ${d.getDate()}일 (${w}) <span class="mono" style="color:var(--fg-3)">${its.length}건</span><button class="btn" type="button" data-caladd="${calExpand}">+ 이 날 새 업무</button></h4>` +
+    (its.map((i) => `<button type="button" class="cal-it ${i.status}" data-open="${esc(i.id)}" style="--c:${colorOf(i.area)}">${i.status === "done" ? "✓ " : i.status === "blocked" ? "⚠ " : ""}${esc(i.title)}${i.start && i.due ? ` <span class="mono" style="color:var(--fg-3)">${shortDay(i.start)} ~ ${shortDay(i.due)}</span>` : ""}</button>`).join("") || `<p class="msg">이 날 업무가 없습니다.</p>`) + `</div>`;
+}
+let calExpand = ""; // 고른 날 ('+n건 더' · 휴대폰에서 누른 날): 칸을 모두 펼치고 아래에 목록
+(function bindCalDrag(v) {
+  let dragId = null;
+  v.addEventListener("dragstart", (e) => { const b = e.target.closest(".cal-it"); if (!b) return; dragId = b.dataset.open; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); });
+  v.addEventListener("dragover", (e) => { const c = e.target.closest(".cal-d"); if (!c || !dragId) return; e.preventDefault(); $$(".cal-d.over", v).forEach((x) => x !== c && x.classList.remove("over")); c.classList.add("over"); });
+  v.addEventListener("dragleave", (e) => { const c = e.target.closest(".cal-d"); if (c && !c.contains(e.relatedTarget)) c.classList.remove("over"); });
+  v.addEventListener("drop", (e) => {
+    const c = e.target.closest(".cal-d"); if (!c || !dragId) return; e.preventDefault(); c.classList.remove("over");
+    const it = items.find((i) => i.id === dragId); dragId = null; if (!it) return;
+    // 놓은 날을 마감일로. 기간이 있으면 시작일도 같이 민다
+    const base = it.due || it.start, dd = daysBetween(base, c.dataset.day); if (!dd) return;
+    const f = {}; if (it.start) f.start = addDays(it.start, dd); if (it.due) f.due = addDays(it.due, dd);
+    send({ op: "update", id: it.id, fields: f }, () => Object.assign(it, f));
+  });
+  v.addEventListener("dragend", () => { dragId = null; $$(".cal-d.over", v).forEach((x) => x.classList.remove("over")); });
+})($("#view"));
+
 // ───────── 목록 ─────────
 function renderList(v) {
   const [key, dir] = ui.sort;
@@ -873,6 +946,11 @@ document.addEventListener("click", (e) => {
   const op = t.closest("[data-open]"); if (op) { openDrawer(op.dataset.open); return; }
   const tab = t.closest("#tabs button"); if (tab) { ui.view = tab.dataset.view; saveUi(); render(); return; }
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
+  const cm = t.closest("[data-cal]"); if (cm) { const n = Number(cm.dataset.cal), [yy, mm] = (ui.month || TODAY().slice(0, 7)).split("-").map(Number); ui.month = n ? ymd(new Date(yy, mm - 1 + n, 1)).slice(0, 7) : TODAY().slice(0, 7); saveUi(); render(); return; }
+  const cd = t.closest("[data-calday]"); if (cd) { calExpand = cd.dataset.calday; render(); return; }
+  const ca = t.closest("[data-caladd]"); if (ca) { openAdd({ due: ca.dataset.caladd }); return; }
+  // 빈 칸: 컴퓨터는 그날 마감으로 새 업무, 휴대폰은 그날 업무를 아래에 펼친다
+  const cday = t.closest(".cal-d"); if (cday && !t.closest("button")) { if (matchMedia("(max-width: 640px)").matches) { calExpand = calExpand === cday.dataset.day ? "" : cday.dataset.day; render(); } else openAdd({ due: cday.dataset.day }); return; }
   const ch = t.closest("#filters [data-g]");
   if (ch) { const g = ch.dataset.g;
     if (g === "clear") { Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false }); dueOnly = ""; }
@@ -1085,7 +1163,7 @@ document.addEventListener("submit", (e) => {
 function openAdd(preset) {
   const f = $("#add-form");
   f.area.innerHTML = areas.map((a) => `<option value="${a.key}">${esc(a.name)}</option>`).join("");
-  f.reset(); f.area.value = preset.area || (ui.areas[0] || areas[0].key); f.status.value = preset.status || "todo";
+  f.reset(); f.area.value = preset.area || (ui.areas[0] || areas[0].key); f.status.value = preset.status || "todo"; if (preset.due) f.due.value = preset.due;
   f.owner.value = store.get(K_USER) || me || "대표"; $("#add-msg").textContent = "";
   $("#add-tag").hidden = !tags.length; $("#add-owner").hidden = Boolean(tags.length);
   f.tag.innerHTML = `<option value="">없음</option>` + tags.map((t) => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
@@ -1166,8 +1244,8 @@ setInterval(() => { if (pass && !openId && !document.hidden && !document.querySe
 document.title = CFG.title;
 $(".brand").innerHTML = `<b>${esc(CFG.brand)}</b><span>${esc(CFG.sub)}</span>`;
 $(".lock-card h1").textContent = CFG.brand; $(".lock-card p").textContent = CFG.lock;
-if (ME) $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>');
-else if (ui.view === "areas") ui.view = "flow";
+if (ME) { $('#tabs [data-view="time"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="cal" aria-selected="false">달력</button>'); $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>'); }
+else if (ui.view === "areas" || ui.view === "cal") ui.view = "flow";
 if (ME) $$('#menu-pop [data-act="mail"], #menu-pop [data-act="cal"]').forEach((b) => { b.hidden = false; });
 if (ME) $$('#menu-pop [data-act="areas"], #menu-pop [data-act="import"], #menu-pop [data-act="name"]').forEach((b) => { b.hidden = true; });
 const theme = store.get(K_THEME); if (theme) document.documentElement.dataset.theme = theme;
