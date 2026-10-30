@@ -840,19 +840,21 @@ function renderCal(v) {
   const last = addDays(addDays(first, 32).slice(0, 7) + "-01", -1);
   const weeks = Math.ceil((daysBetween(from, last) + 1) / 7);
   const list = visible().filter((i) => i.start || i.due);
-  const on = (d) => list.filter((i) => { const s = i.start || i.due, e = i.due || i.start; return s <= d && d <= e; })
+  // 기간이 있는 업무는 시작일과 마감일에만 놓는다 (사이 날짜를 다 채우면 달력이 업무로 덮인다)
+  const on = (d) => list.filter((i) => i.due === d || (i.start === d && i.start !== i.due) || (!i.due && i.start === d))
     .sort((a, b) => (b.due === d) - (a.due === d) || (a.status === "done") - (b.status === "done") || byOrder(a, b));
+  const isStart = (i, d) => i.start === d && i.due && i.due !== d;
   const [y, m] = ym.split("-").map(Number);
   let cells = ["월", "화", "수", "목", "금", "토", "일"].map((w, k) => `<div class="cal-h${k === 6 ? " sun" : ""}">${w}</div>`).join("");
   for (let k = 0; k < weeks * 7; k++) {
     const d = addDays(from, k), its = on(d), more = d === calExpand ? 0 : its.length - CAL_MAX;
     cells += `<div class="cal-d${d.slice(0, 7) !== ym ? " out" : ""}${d === today ? " now" : ""}${d === calExpand ? " sel" : ""}${k % 7 === 6 ? " sun" : ""}" data-day="${d}"><span class="cal-n">${parseDay(d).getDate()}</span>` +
-      its.slice(0, more > 0 ? CAL_MAX - 1 : its.length).map((i) => `<button type="button" class="cal-it ${i.status}${i.due && i.due !== d && i.start ? " span" : ""}" draggable="true" data-open="${esc(i.id)}" style="--c:${colorOf(i.area)}" title="${esc(i.title)}${i.start && i.due ? ` · ${shortDay(i.start)} ~ ${shortDay(i.due)}` : ""} · ${SNAME[i.status]}">${i.status === "done" ? "✓ " : i.status === "blocked" ? "⚠ " : ""}${esc(i.title)}</button>`).join("") +
+      its.slice(0, more > 0 ? CAL_MAX - 1 : its.length).map((i) => `<button type="button" class="cal-it ${i.status}${isStart(i, d) ? " span" : ""}" draggable="true" data-open="${esc(i.id)}" data-end="${isStart(i, d) ? "s" : "e"}" style="--c:${colorOf(i.area)}" title="${esc(i.title)}${i.start && i.due ? ` · ${shortDay(i.start)} ~ ${shortDay(i.due)}` : ""} · ${SNAME[i.status]}">${isStart(i, d) ? "▶ " : ""}${i.status === "done" ? "✓ " : i.status === "blocked" ? "⚠ " : ""}${esc(i.title)}</button>`).join("") +
       (more > 0 ? `<button type="button" class="cal-more" data-calday="${d}">+${more + 1}건 더</button>` : "") + `</div>`;
   }
   const undated = visible().filter((i) => !i.start && !i.due && i.status !== "done").length;
   v.innerHTML = `<div class="cal-tools"><button class="btn" type="button" data-cal="-1" aria-label="이전 달">‹</button><h3>${y}년 ${m}월</h3><button class="btn" type="button" data-cal="1" aria-label="다음 달">›</button><button class="btn ghost" type="button" data-cal="0">오늘</button>
-    <span class="msg">빈 칸을 누르면 그날 마감으로 새 업무, 업무를 끌어 다른 날에 놓으면 날짜가 옮겨집니다.${undated ? ` 날짜 없는 업무 ${undated}건은 '일정' 탭 오른쪽에 있습니다.` : ""}</span></div>
+    <span class="msg">빈 칸을 누르면 그날 마감으로 새 업무. 업무를 끌어 놓으면 마감일이, ▶ 표시(시작일)를 끌면 시작일이 옮겨집니다.${undated ? ` 날짜 없는 업무 ${undated}건은 '일정' 탭 오른쪽에 있습니다.` : ""}</span></div>
     <div class="cal">${cells}</div>${calExpand ? calDay(on(calExpand)) : ""}`;
 }
 // 고른 날의 업무 전체 (휴대폰에서는 칸이 좁아 여기서 본다)
@@ -864,15 +866,19 @@ function calDay(its) {
 let calExpand = ""; // 고른 날 ('+n건 더' · 휴대폰에서 누른 날): 칸을 모두 펼치고 아래에 목록
 (function bindCalDrag(v) {
   let dragId = null;
-  v.addEventListener("dragstart", (e) => { const b = e.target.closest(".cal-it"); if (!b) return; dragId = b.dataset.open; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); });
+  let dragEnd = "e";
+  v.addEventListener("dragstart", (e) => { const b = e.target.closest(".cal-it[data-end]"); if (!b) return; dragId = b.dataset.open; dragEnd = b.dataset.end; e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); });
   v.addEventListener("dragover", (e) => { const c = e.target.closest(".cal-d"); if (!c || !dragId) return; e.preventDefault(); $$(".cal-d.over", v).forEach((x) => x !== c && x.classList.remove("over")); c.classList.add("over"); });
   v.addEventListener("dragleave", (e) => { const c = e.target.closest(".cal-d"); if (c && !c.contains(e.relatedTarget)) c.classList.remove("over"); });
   v.addEventListener("drop", (e) => {
     const c = e.target.closest(".cal-d"); if (!c || !dragId) return; e.preventDefault(); c.classList.remove("over");
     const it = items.find((i) => i.id === dragId); dragId = null; if (!it) return;
-    // 놓은 날을 마감일로. 기간이 있으면 시작일도 같이 민다
-    const base = it.due || it.start, dd = daysBetween(base, c.dataset.day); if (!dd) return;
-    const f = {}; if (it.start) f.start = addDays(it.start, dd); if (it.due) f.due = addDays(it.due, dd);
+    // 끈 쪽 날짜만 바꾼다 (▶ 시작일 또는 마감일). 시작일이 마감일을 넘지 않게 맞춘다
+    const day = c.dataset.day, f = {};
+    if (dragEnd === "s") { if (day === it.start) return; f.start = day; if (day > it.due) f.due = day; }
+    else if (it.due) { if (day === it.due) return; f.due = day; if (it.start && day < it.start) f.start = day; }
+    else { if (day === it.start) return; f.start = day; }
+    if (f.start && f.start === (f.due || it.due)) f.start = "";
     send({ op: "update", id: it.id, fields: f }, () => Object.assign(it, f));
   });
   v.addEventListener("dragend", () => { dragId = null; $$(".cal-d.over", v).forEach((x) => x.classList.remove("over")); });
