@@ -2,7 +2,7 @@
 // - 노션에 있는 것: 제목(할일 또는 일정), 분야(선택), 태그(선택), 상태(시작 · 보류 · 완료 체크), 날짜 · 데드라인
 // - 노션에 칸이 없는 것: 설명 · 메모 · 담당 · 선행 업무 · 순서 · 기록 → Blob(meta)에 업무 id별로 따로 둔다
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
-import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, text, same, logged } from './_checklist-core.js';
+import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, NOTE_MAX, text, same, logged } from './_checklist-core.js';
 import { loadAreaBoard, areaOp } from './_me-areas.js';
 import { loadToday, kst, addDays, inboxFilter, inboxExclude } from './_me-habit.js';
 import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
@@ -309,7 +309,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
             ? Math.max(0, ...items.filter((i) => i.area === fields.area).map((i) => i.order || 0)) + 1 : Number(raw.order) || 0;
           const it = logged({
             ...fromPage(page), ...fields,
-            detail: text(raw.detail, 1000), note: text(raw.note, 1000), owner: text(raw.owner, 20) || '대표',
+            detail: text(raw.detail, 1000), note: text(raw.note, NOTE_MAX), owner: text(raw.owner, 20) || '대표',
             deps: (Array.isArray(raw.deps) ? raw.deps : []).filter(has), order, updatedAt: now,
           }, me, now, '추가');
           putMeta(it);
@@ -329,7 +329,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           if ('start' in f) want.start = okDay(f.start);
           if ('due' in f) want.due = okDay(f.due);
           if ('detail' in f) want.detail = text(f.detail, 1000);
-          if ('note' in f) want.note = text(f.note, 1000);
+          if ('note' in f) want.note = text(f.note, NOTE_MAX);
           if ('owner' in f) want.owner = text(f.owner, 20) || '대표';
           if ('deps' in f && Array.isArray(f.deps)) want.deps = [...new Set(f.deps.map((d) => text(d, 40)))].filter((d) => has(d) && d !== cur.id).slice(0, 20);
           if ('order' in f && Number.isFinite(Number(f.order))) want.order = Number(f.order);

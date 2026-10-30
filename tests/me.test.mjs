@@ -45,6 +45,13 @@ assert.equal(rep2.due, '2026-11-02'); assert.deepEqual(rep2.deps, [added.id]); a
 const before = notion.calls.length;
 await call('POST', { op: 'update', id: rep.id, fields: { detail: '보고서 설명' } });
 assert.equal(notion.calls.filter((c, i) => i >= before && c[0] === 'update').length, 0);
+// 메모는 길게 (5000자까지)
+const longNote = '진행 상황 '.repeat(400);
+r = await call('POST', { op: 'update', id: rep.id, fields: { note: longNote } });
+assert.equal(r.out.items.find((i) => i.id === rep.id).note, longNote.trim());
+// 다음 할 일: 이 일을 선행으로 건 새 업무
+r = await call('POST', { op: 'add', item: { title: '결과 공유', area: kba.key, deps: [rep.id] } });
+assert.deepEqual(r.out.items.find((i) => i.title === '결과 공유').deps, [rep.id]);
 // clear dates on single-date item
 await call('POST', { op: 'update', id: by('급여정산').id, fields: { due: '' } });
 u = notion.calls.filter((c) => c[0] === 'update').at(-1)[2]; assert.deepEqual(u['날짜'], { date: null });

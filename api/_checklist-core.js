@@ -15,6 +15,7 @@ export const STATUS_NAME = { todo: '할 일', doing: '진행 중', blocked: '막
 const KEEP_VERSIONS = 5; // 저장할 때마다 새 파일을 만들고, 최근 5개만 남긴다
 const MAX_AREAS = 8; // 분야마다 구별되는 색을 하나씩 주기 위해 8개까지
 export const MAX_LOG = 30;
+export const NOTE_MAX = 5000; // 메모 · 진행 상황은 길게 쓸 수 있게
 export const EDITABLE = ['title', 'detail', 'note', 'owner', 'area', 'status', 'start', 'due', 'deps', 'order'];
 export const FIELD_NAME = { title: '제목', detail: '설명', note: '메모', owner: '담당', area: '분야', start: '시작일', due: '마감일', deps: '선행 업무', order: '순서' };
 
@@ -52,7 +53,7 @@ export function cleanItem(raw, areaKeys) {
     status: STATUSES.includes(raw.status) ? raw.status : 'todo',
     title: text(raw.title, 120),
     detail: text(raw.detail, 1000),
-    note: text(raw.note, 1000),
+    note: text(raw.note, NOTE_MAX),
     start: day(raw.start),
     due: day(raw.due),
     deps: deps.filter((d) => d !== id),

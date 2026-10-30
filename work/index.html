@@ -328,6 +328,8 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .dep b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dep button { border: 0; background: none; color: var(--fg-3); padding: 0 4px; font-size: 1rem; line-height: 1; }
 .dep.after { border-style: dashed; }
+button.dep { cursor: pointer; font: inherit; font-size: .8rem; color: inherit; padding-right: 8px; }
+textarea.input.note { min-height: 180px; }
 .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .log li { font-size: .78rem; color: var(--fg-2); display: grid; grid-template-columns: auto 1fr; gap: 8px; }
 .log time { color: var(--fg-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -602,7 +604,7 @@ function take(data) {
   const open = items.find((i) => i.id === openId); if (open) Object.assign(open, editPatch);
   render();
 }
-const drawerBusy = () => { const a = document.activeElement; return !!(a && $("#drawer").contains(a) && a.dataset.f); };
+const drawerBusy = () => { const a = document.activeElement; return !!(a && $("#drawer").contains(a) && (a.dataset.f || (a.hasAttribute("data-next") && a.value))); };
 async function refresh() {
   if (pending) return;
   try { take(await api("GET")); } catch (e) { if (e.status === 401) lock("비밀번호가 맞지 않습니다."); }
@@ -961,7 +963,7 @@ function renderList(v) {
 }
 
 // ───────── 상세 서랍 ─────────
-function openDrawer(id) { openId = id; renderDrawer(); $("#drawer").hidden = false; $("#scrim").hidden = false; }
+function openDrawer(id) { if (openId && openId !== id) flushEdits(); openId = id; renderDrawer(); $("#drawer").hidden = false; $("#scrim").hidden = false; }
 function closeDrawer() { flushEdits(); openId = null; $("#drawer").hidden = true; $("#scrim").hidden = true; }
 let editTimer = null, editPatch = {};
 function queueEdit(field, value) {
@@ -975,10 +977,13 @@ function flushEdits() {
   if (!openId || !Object.keys(f).length) return;
   send({ op: "update", id: openId, fields: f }).then(() => { const s = $(".saving", $("#drawer")); if (s) s.textContent = "저장됨"; });
 }
+// 메모 칸은 쓴 만큼 늘어난다
+const grow = (t) => { t.style.height = "auto"; t.style.height = Math.max(t.scrollHeight + 2, 180) + "px"; };
 function renderDrawer() {
   const it = items.find((i) => i.id === openId); const d = $("#drawer");
   if (!it) { closeDrawer(); return; }
   const active = document.activeElement && d.contains(document.activeElement) ? document.activeElement.dataset.f : null;
+  const nextFocus = document.activeElement && d.contains(document.activeElement) && document.activeElement.hasAttribute("data-next");
   const others = items.filter((x) => x.id !== it.id && !it.deps.includes(x.id) && !chainDown(it.id).has(x.id));
   const after = items.filter((x) => x.deps.includes(it.id));
   d.innerHTML = `<div class="d-head"><span class="area-pill" style="--c:${colorOf(it.area)}"><i></i>${esc(areaOf(it.area).name)}</span><span class="saving">${pending ? "저장 중…" : ""}</span><button class="btn ghost" type="button" data-close-drawer aria-label="닫기">✕</button></div>
@@ -993,16 +998,22 @@ function renderDrawer() {
       <label class="field">마감일<input class="input" type="date" data-f="due" value="${it.due}"></label>
     </div>
     <label class="field">설명<textarea class="input" data-f="detail" maxlength="1000" placeholder="무엇을 하는 일인지">${esc(it.detail)}</textarea></label>
-    <label class="field">메모 · 진행 상황<textarea class="input" data-f="note" maxlength="1000" placeholder="지금 어디까지 했는지, 무엇을 기다리는지">${esc(it.note)}</textarea></label>
+    <label class="field">메모 · 진행 상황<textarea class="input note" data-f="note" maxlength="5000" rows="8" placeholder="지금 어디까지 했는지, 무엇을 기다리는지">${esc(it.note)}</textarea></label>
     <div>
       <p class="sec-t">먼저 끝나야 하는 업무 (선행)</p>
       <div class="deps">${it.deps.map((x) => { const o = items.find((i) => i.id === x); return o ? `<span class="dep" style="--c:${colorOf(o.area)}">${ICON[o.status]}<b>${esc(o.title)}</b><button type="button" data-undep="${esc(x)}" aria-label="선행 업무에서 빼기">×</button></span>` : ""; }).join("")}
       <select class="input" data-adddep style="max-width:100%"><option value="">+ 선행 업무 추가</option>${areas.map((a) => { const l = others.filter((o) => o.area === a.key); return l.length ? `<optgroup label="${esc(a.name)}">${l.map((o) => `<option value="${esc(o.id)}">${esc(o.title)}</option>`).join("")}</optgroup>` : ""; }).join("")}</select></div>
-      ${after.length ? `<p class="sec-t" style="margin-top:10px">이 일을 기다리는 업무</p><div class="deps">${after.map((o) => `<span class="dep after">${ICON[o.status]}<b>${esc(o.title)}</b></span>`).join("")}</div>` : ""}
+    </div>
+    <div>
+      <p class="sec-t">다음 할 일 <span style="font-weight:500;color:var(--fg-3)">— 이 일에서 이어지는 업무 (이 일이 선행으로 걸림)</span></p>
+      ${after.length ? `<div class="deps" style="margin-bottom:8px">${after.map((o) => `<button type="button" class="dep after" data-open="${esc(o.id)}" style="--c:${colorOf(o.area)}">${ICON[o.status]}<b>${esc(o.title)}</b>${o.due ? `<span class="mono" style="color:var(--fg-3)">${shortDay(o.due)}</span>` : ""}</button>`).join("")}</div>` : ""}
+      <form class="d-next"><input class="input" data-next maxlength="120" placeholder="+ 다음 할 일 적고 Enter" aria-label="다음 할 일" autocomplete="off"></form>
     </div>
     <div><p class="sec-t">기록</p><ul class="log">${[...it.log].reverse().map((l) => `<li><time>${relTime(l.at)}</time><span><b>${esc(l.by)}</b> · ${esc(l.text)}</span></li>`).join("") || `<li><time></time><span>아직 기록이 없습니다.</span></li>`}</ul></div>
   </div>
   <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button>${it.url ? `<a class="btn ghost" href="${esc(it.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션에서 열기 ↗</a>` : ""}<span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
+  $$("textarea.note", d).forEach(grow);
+  if (nextFocus) $("[data-next]", d).focus();
   if (active) { const el = d.querySelector(`[data-f="${active}"]`); if (el) { el.focus(); if (el.setSelectionRange && el.type !== "date") { const n = el.value.length; el.setSelectionRange(n, n); } } }
 }
 function chainDown(id) { const out = new Set(), walk = (x) => items.filter((i) => i.deps.includes(x)).forEach((i) => { if (!out.has(i.id)) { out.add(i.id); walk(i.id); } }); walk(id); return out; }
@@ -1052,6 +1063,7 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   const t = e.target;
   if (t.id === "q") { ui.q = t.value; render(); return; }
+  if (t.matches("textarea.note")) grow(t);
   if (t.matches("#drawer [data-f]") && t.tagName !== "SELECT" && t.type !== "date") { if (t.dataset.f === "title" && !t.value.trim()) return; queueEdit(t.dataset.f, t.value); }
 });
 document.addEventListener("focusout", (e) => { if (e.target.matches && e.target.matches("#drawer [data-f]")) flushEdits(); });
@@ -1237,6 +1249,16 @@ function openAdd(preset) {
   f.tag.innerHTML = `<option value="">없음</option>` + tags.map((t) => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
   $("#add-dlg").showModal(); f.title.focus();
 }
+// 상세의 '다음 할 일': 같은 분야 · 태그 · 담당으로 새 업무를 만들고 이 일을 선행으로 건다
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest(".d-next"); if (!f) return; e.preventDefault();
+  const inp = $("[data-next]", f), title = inp.value.trim(), it = items.find((i) => i.id === openId); if (!title || !it) return;
+  const item = { title, area: it.area, owner: it.owner || "대표", status: "todo", due: "", detail: "", deps: [it.id] };
+  if (tags.length) item.tag = it.tag || "";
+  inp.value = "";
+  send({ op: "add", item }, () => { items.push({ ...item, id: "tmp-" + Date.now(), order: 1e9, note: "", start: "", log: [], updatedAt: new Date().toISOString() }); });
+  toast(`다음 할 일 ‘${title}’을(를) 추가했습니다.`);
+});
 $("#add-form").addEventListener("submit", (e) => {
   e.preventDefault(); const f = e.target, title = f.title.value.trim(); if (!title) return;
   const item = { title, area: f.area.value, owner: f.owner.value.trim() || "대표", status: f.status.value, due: f.due.value, detail: f.detail.value.trim() };
