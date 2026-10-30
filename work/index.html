@@ -215,6 +215,24 @@ main { flex: 1; padding: 12px 16px 60px; min-width: 0; }
 .cal-more { font-size: .7rem; color: var(--fg-3); padding: 0 6px; background: none; border: 0; text-align: left; cursor: pointer; }
 @media (max-width: 640px) { .cal-d { min-height: 72px; padding: 2px; } .cal-it { font-size: .64rem; padding: 1px 3px; } .cal-h { padding: 4px; } }
 
+/* 날짜 고르기 (브라우저 기본 달력은 기기 언어를 따라 미국식으로 보일 수 있어 직접 그린다) */
+.dp-src { display: none !important; }
+.dp-btn { text-align: left; cursor: pointer; color: var(--fg); font: inherit; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dp-btn.dp-none { color: var(--fg-3); }
+.dp-pop { position: fixed; z-index: 1000; width: 272px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 10px; }
+.dp-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.dp-head b { flex: 1; text-align: center; font-size: .92rem; }
+.dp-head button, .dp-foot button { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; color: var(--fg); font: inherit; font-size: .82rem; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.dp-grid span { font-size: .7rem; color: var(--fg-3); padding: 4px 0; font-weight: 700; }
+.dp-grid span.sun, .dp-grid button.sun { color: var(--a8); }
+.dp-grid button { background: none; border: 0; border-radius: 8px; padding: 7px 0; font: inherit; font-size: .84rem; cursor: pointer; color: var(--fg); font-variant-numeric: tabular-nums; }
+.dp-grid button:hover { background: var(--surface-2); }
+.dp-grid button.out { opacity: .35; }
+.dp-grid button.now { outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+.dp-grid button.on { background: var(--accent); color: #fff; }
+.dp-foot { display: flex; justify-content: space-between; margin-top: 8px; }
+
 /* 일정 */
 .tl-tools { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 .tl-wrap { display: grid; grid-template-columns: 1fr 260px; gap: 12px; align-items: start; }
@@ -495,6 +513,50 @@ const relTime = (iso) => {
   if (s < 86400) return `${Math.floor(s / 3600)}시간 전`;
   const d = new Date(iso); return `${d.getMonth() + 1}.${d.getDate()}`;
 };
+
+// ───────── 날짜 고르기 ─────────
+// <input type="date">는 그대로 두고(값 · change 이벤트를 그대로 쓴다) 숨긴 뒤, 한국식 표시 단추와 작은 달력을 붙인다
+const dpLabel = (v) => { if (!v) return "날짜 선택"; const d = parseDay(v); return `${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() + ". " : ""}${d.getMonth() + 1}. ${d.getDate()}. (${"일월화수목금토"[d.getDay()]})`; };
+function dpSync(inp) { const b = inp && inp._dp; if (b) { b.textContent = dpLabel(inp.value); b.classList.toggle("dp-none", !inp.value); } }
+function dpEnhance(root) {
+  $$('input[type="date"]:not(.dp-src)', root).forEach((inp) => {
+    const b = document.createElement("button"); b.type = "button";
+    b.className = inp.className + " dp-btn"; b.setAttribute("aria-label", inp.getAttribute("aria-label") || "날짜 선택");
+    inp.classList.add("dp-src"); inp.after(b); inp._dp = b; b._inp = inp;
+    inp.focus = () => b.focus(); // 다른 코드가 입력 칸에 focus() 하면 단추로
+    dpSync(inp);
+  });
+}
+let dpPop = null;
+function dpClose() { if (dpPop) { dpPop.remove(); dpPop = null; } }
+function dpOpen(b) {
+  dpClose();
+  const inp = b._inp, today = TODAY();
+  let ym = (inp.value || today).slice(0, 7);
+  const pop = dpPop = document.createElement("div"); pop.className = "dp-pop"; pop.setAttribute("role", "dialog");
+  const set = (v) => { inp.value = v; dpSync(inp); dpClose(); inp.dispatchEvent(new Event("input", { bubbles: true })); inp.dispatchEvent(new Event("change", { bubbles: true })); b.focus(); };
+  const draw = () => {
+    const first = ym + "-01", from = addDays(first, -((parseDay(first).getDay() + 6) % 7)), [y, m] = ym.split("-").map(Number);
+    let g = ["월", "화", "수", "목", "금", "토", "일"].map((w, k) => `<span${k === 6 ? ' class="sun"' : ""}>${w}</span>`).join("");
+    for (let k = 0; k < 42; k++) { const d = addDays(from, k); g += `<button type="button" data-dp="${d}" class="${d.slice(0, 7) !== ym ? "out " : ""}${d === today ? "now " : ""}${d === inp.value ? "on " : ""}${k % 7 === 6 ? "sun" : ""}">${parseDay(d).getDate()}</button>`; }
+    pop.innerHTML = `<div class="dp-head"><button type="button" data-dpm="-1" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button type="button" data-dpm="1" aria-label="다음 달">›</button></div><div class="dp-grid">${g}</div><div class="dp-foot"><button type="button" data-dp="">지우기</button><button type="button" data-dp="${today}">오늘</button></div>`;
+  };
+  draw();
+  pop.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const mv = e.target.closest("[data-dpm]"); if (mv) { const [y, m] = ym.split("-").map(Number); ym = ymd(new Date(y, m - 1 + Number(mv.dataset.dpm), 1)).slice(0, 7); draw(); return; }
+    const d = e.target.closest("[data-dp]"); if (d) set(d.dataset.dp);
+  });
+  (b.closest("dialog") || document.body).appendChild(pop);
+  const r = b.getBoundingClientRect(), h = pop.offsetHeight, w = pop.offsetWidth;
+  pop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px";
+  pop.style.top = (r.bottom + h + 8 > innerHeight && r.top - h - 6 > 0 ? r.top - h - 6 : Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
+}
+document.addEventListener("click", (e) => { const b = e.target.closest(".dp-btn"); if (b) { if (dpPop && dpPop._b === b) dpClose(); else { dpOpen(b); dpPop._b = b; } return; } if (dpPop && !dpPop.contains(e.target)) dpClose(); }, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && dpPop) { e.stopPropagation(); dpClose(); } }, true);
+window.addEventListener("resize", dpClose);
+new MutationObserver(() => dpEnhance(document)).observe(document.body, { childList: true, subtree: true });
+dpEnhance(document);
 
 // ───────── 서버 ─────────
 // /me/ 에서 '오래된 완료 포함'을 켜면 60일 넘은 완료 업무까지 불러온다
@@ -1169,7 +1231,7 @@ document.addEventListener("submit", (e) => {
 function openAdd(preset) {
   const f = $("#add-form");
   f.area.innerHTML = areas.map((a) => `<option value="${a.key}">${esc(a.name)}</option>`).join("");
-  f.reset(); f.area.value = preset.area || (ui.areas[0] || areas[0].key); f.status.value = preset.status || "todo"; if (preset.due) f.due.value = preset.due;
+  f.reset(); f.area.value = preset.area || (ui.areas[0] || areas[0].key); f.status.value = preset.status || "todo"; if (preset.due) f.due.value = preset.due; dpSync(f.due);
   f.owner.value = store.get(K_USER) || me || "대표"; $("#add-msg").textContent = "";
   $("#add-tag").hidden = !tags.length; $("#add-owner").hidden = Boolean(tags.length);
   f.tag.innerHTML = `<option value="">없음</option>` + tags.map((t) => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
