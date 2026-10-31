@@ -970,7 +970,8 @@ function queueEdit(field, value) {
   const it = items.find((i) => i.id === openId); if (!it) return;
   editPatch[field] = value; it[field] = value;
   $(".saving", $("#drawer")).textContent = "입력 중…";
-  clearTimeout(editTimer); editTimer = setTimeout(flushEdits, 700);
+  // 글 칸은 손을 멈추고 2초 뒤 (칸을 벗어나면 바로) 저장한다
+  clearTimeout(editTimer); editTimer = setTimeout(flushEdits, field === "note" || field === "detail" ? 2000 : 700);
 }
 function flushEdits() {
   clearTimeout(editTimer); const f = editPatch; editPatch = {};

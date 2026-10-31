@@ -87,7 +87,14 @@ function whoIs(req, env) {
   return null;
 }
 
-export const logged = (item, by, at, line) => ({ ...item, log: [...(item.log || []), { at, by, text: line }].slice(-MAX_LOG) });
+// 같은 사람이 같은 칸을 30분 안에 다시 고치면(글을 쓰는 동안 자동 저장) 기록을 한 줄로 합친다
+const MERGE_MS = 30 * 60e3;
+export const logged = (item, by, at, line) => {
+  const log = [...(item.log || [])], last = log.at(-1);
+  if (last && last.by === by && last.text === line && Date.parse(at) - Date.parse(last.at) < MERGE_MS) log[log.length - 1] = { at, by, text: line };
+  else log.push({ at, by, text: line });
+  return { ...item, log: log.slice(-MAX_LOG) };
+};
 
 export function createHandler(store, env = process.env, sync = null) {
   return async function handler(req, res) {

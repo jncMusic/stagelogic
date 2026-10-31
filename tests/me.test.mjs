@@ -49,6 +49,11 @@ assert.equal(notion.calls.filter((c, i) => i >= before && c[0] === 'update').len
 const longNote = '진행 상황 '.repeat(400);
 r = await call('POST', { op: 'update', id: rep.id, fields: { note: longNote } });
 assert.equal(r.out.items.find((i) => i.id === rep.id).note, longNote.trim());
+// 메모를 이어서 고치면 기록은 한 줄로 합친다
+const logLen = r.out.items.find((i) => i.id === rep.id).log.length;
+await call('POST', { op: 'update', id: rep.id, fields: { note: longNote + '더' } });
+r = await call('POST', { op: 'update', id: rep.id, fields: { note: longNote + '더 씀' } });
+assert.equal(r.out.items.find((i) => i.id === rep.id).log.length, logLen);
 // 다음 할 일: 이 일을 선행으로 건 새 업무
 r = await call('POST', { op: 'add', item: { title: '결과 공유', area: kba.key, deps: [rep.id] } });
 assert.deepEqual(r.out.items.find((i) => i.title === '결과 공유').deps, [rep.id]);
