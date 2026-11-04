@@ -9,9 +9,11 @@ import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
 import { sendMail } from './_mail.js';
 import { calUrl } from './_me-cal.js';
 
-export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인' };
-const NOTION_FIELDS = ['title', 'area', 'tag', 'status', 'start', 'due'];
-const NAME = { ...FIELD_NAME, tag: '태그' };
+export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인', kind: '종류' };
+// 업무의 성격 (노션 '종류' 선택지). 화면에서 다루는 방법이 다르다 — 오늘의 3가지 추천은 행동 · 종류 없음만
+export const KINDS = ['행동', '정하기', '고민', '쪼개기', '기다리기'];
+const NOTION_FIELDS = ['title', 'area', 'tag', 'kind', 'status', 'start', 'due'];
+const NAME = { ...FIELD_NAME, tag: '태그', kind: '종류' };
 const META_FIELDS = ['detail', 'note', 'owner', 'deps', 'order'];
 const DONE_DAYS = 60; // 완료한 업무는 최근 60일 안에 고친 것만 불러온다
 const KEEP_VERSIONS = 5;
@@ -43,6 +45,7 @@ export function fromPage(page, meta = {}) {
     status: statusOf(pr),
     title: (pr[P.title]?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)',
     tag: pr[P.tag]?.select?.name || '',
+    kind: KINDS.includes(pr[P.kind]?.select?.name) ? pr[P.kind].select.name : '',
     start, due,
     detail: meta.detail || '', note: meta.note || '', owner: meta.owner || '대표',
     deps: Array.isArray(meta.deps) ? meta.deps : [],
@@ -60,6 +63,7 @@ export function toProps(fields, areas, cur) {
   if ('title' in fields) out[P.title] = { title: [{ text: { content: fields.title } }] };
   if ('area' in fields) { const a = areas.find((x) => x.key === fields.area); out[P.area] = { select: a ? { name: a.name } : null }; }
   if ('tag' in fields) out[P.tag] = { select: fields.tag ? { name: fields.tag } : null };
+  if ('kind' in fields) out[P.kind] = { select: fields.kind ? { name: fields.kind } : null };
   if ('status' in fields) {
     out[P.doing] = { checkbox: fields.status === 'doing' };
     out[P.blocked] = { checkbox: fields.status === 'blocked' };
@@ -271,7 +275,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
       const { areas, tags, items, meta, versions } = await loadAll(q('all') === '1');
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
-      const reply = (list) => res.status(200).json({ items: list.map(clean), areas, tags, me });
+      const reply = (list) => res.status(200).json({ items: list.map(clean), areas, tags, kinds: KINDS, me });
       if (req.method === 'GET') return reply(items);
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
@@ -301,7 +305,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           const title = text(raw.title, 120);
           if (!title) return res.status(400).json({ error: 'title_required' });
           const fields = {
-            title, area: keys.includes(raw.area) ? raw.area : keys[0], tag: tagNames.includes(raw.tag) ? raw.tag : '',
+            title, area: keys.includes(raw.area) ? raw.area : keys[0], tag: tagNames.includes(raw.tag) ? raw.tag : '', kind: KINDS.includes(raw.kind) ? raw.kind : '',
             status: STATUSES.includes(raw.status) ? raw.status : 'todo', start: okDay(raw.start), due: okDay(raw.due),
           };
           const page = await notion.create(dbId, toProps(fields, areas, null));
@@ -325,6 +329,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           if (!want.title) return res.status(400).json({ error: 'title_required' });
           if ('area' in f && keys.includes(f.area)) want.area = f.area;
           if ('tag' in f && (f.tag === '' || tagNames.includes(f.tag))) want.tag = f.tag;
+          if ('kind' in f && (f.kind === '' || KINDS.includes(f.kind))) want.kind = f.kind;
           if ('status' in f && STATUSES.includes(f.status)) want.status = f.status;
           if ('start' in f) want.start = okDay(f.start);
           if ('due' in f) want.due = okDay(f.due);

@@ -54,6 +54,8 @@ export function buildWeekly(t, items, areas, meta) {
   const title = (id) => (items.find((i) => i.id === id) || {}).title || '(지금 목록에 없음)';
   const times = {}; w.postponed.forEach((p) => { times[p.id] = (times[p.id] || 0) + 1; });
   const most = Object.entries(times).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // 종류별로 남아 있는 일 — 주말에 한 번 훑어본다
+  const left = (k) => items.filter((i) => i.kind === k && i.status !== 'done').sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
   const body = `<h2 style="margin:4px 0;font-size:20px">이번 주 돌아보기</h2>
     <table style="border-collapse:collapse;margin:8px 0">${[['기록', `${t.stats.week}개`], ['완료', `${doneWeek.length}개`], ['오늘의 3가지 정한 날', `${w.planned} / 7일`], ['점검한 날', `${w.checked} / 7일`], ['연속 기록', `${t.stats.streak}일`]]
       .map(([k, v]) => `<tr><td style="padding:3px 16px 3px 0;color:#666">${k}</td><td style="font-weight:700">${v}</td></tr>`).join('')}</table>
@@ -61,6 +63,9 @@ export function buildWeekly(t, items, areas, meta) {
     ${sec('자주 미룬 일', most.map(([id, c]) => `${e(title(id))} <b style="color:#b02a2a">${c}번</b>`), '#b02a2a')}
     ${sec('미룬 이유', w.postponed.slice(0, 12).map((p) => `${md(p.day)} ${e(title(p.id))} — ${p.r === 'tomorrow' ? '내일로' : '보류'}: ${e(p.why)}`))}
     ${sec('다시 정할 일', t.revisit.map((i) => row(areas, i, ` · ${i.late}일 지남`)), '#b02a2a')}
+    ${sec('정할 것', left('정하기').map((i) => row(areas, i)), '#c25e00')}
+    ${sec('고민 중인 것', left('고민').map((i) => row(areas, i)), '#6a4fbf')}
+    ${sec('기다리는 것', left('기다리기').map((i) => row(areas, i)))}
     <p style="margin:16px 0 0;color:#555">다음 주에 바꿔 볼 한 가지를 노션에 적어 두세요.</p>`;
   return { subject: `[주간 리뷰] ${md(from)}~${md(t.today)} 기록 ${t.stats.week} · 완료 ${doneWeek.length}`, html: wrap(`${from} ~ ${t.today}`, body) };
 }

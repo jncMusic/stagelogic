@@ -322,6 +322,11 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 3px; }
 .seg button { border: 0; background: transparent; border-radius: 8px; padding: 6px 4px; font-size: .8rem; font-weight: 700; color: var(--fg-2); display: inline-flex; gap: 5px; align-items: center; justify-content: center; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+/* 종류 (/me/) — 행동 · 정하기 · 고민 · 쪼개기 · 기다리기 */
+.kind { display: inline-flex; align-items: center; border-radius: 6px; padding: 0 6px; font-size: .72rem; font-weight: 700; color: var(--k); background: color-mix(in srgb, var(--k) 14%, var(--surface)); white-space: nowrap; }
+.seg.kinds { grid-template-columns: repeat(5, 1fr); }
+.seg.kinds button[aria-pressed="true"] { color: var(--k); }
+.kind-hint { margin: -6px 0 0; font-size: .78rem; color: var(--fg-3); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .deps { display: flex; flex-wrap: wrap; gap: 6px; }
 .dep { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: 8px; padding: 3px 4px 3px 8px; font-size: .8rem; background: var(--surface); max-width: 100%; }
@@ -430,6 +435,7 @@ dialog::backdrop { background: rgba(0,0,0,.3); }
       <label class="field">분야<select class="input" name="area"></select></label>
       <label class="field" id="add-owner">담당<input class="input" name="owner" list="owners" maxlength="20"></label>
       <label class="field" id="add-tag" hidden>태그<select class="input" name="tag"></select></label>
+      <label class="field" id="add-kind" hidden>종류<select class="input" name="kind"></select></label>
       <label class="field">단계<select class="input" name="status"><option value="todo">할 일</option><option value="doing">진행 중</option><option value="blocked">막힘</option><option value="done">완료</option></select></label>
       <label class="field">마감일<input class="input" name="due" type="date"></label>
     </div>
@@ -485,10 +491,22 @@ const stTag = (k) => `<span class="st ${k}">${ICON[k]}${SNAME[k]}</span>`;
 
 // ───────── 상태 ─────────
 let pass = "", me = "";
-let items = [], areas = [], tags = []; // tags: /me/ 에서만 (노션 '태그' 선택지)
+let items = [], areas = [], tags = [], kinds = []; // tags · kinds: /me/ 에서만 (노션 '태그' · '종류' 선택지)
+// 종류별 색과 안내 — 종류마다 다루는 방법이 다르다
+const KIND_COLOR = { 행동: "var(--a1)", 정하기: "var(--a2)", 고민: "var(--a7)", 쪼개기: "var(--a3)", 기다리기: "var(--fg-3)" };
+const KIND_HINT = {
+  행동: "바로 손댈 수 있는 일. 오늘의 3가지 추천에 나옵니다.",
+  정하기: "선택지와 기준을 메모에 적고 마감일까지 정하세요. 완료할 때 정한 내용을 남깁니다.",
+  고민: "마감이 없어도 됩니다. 생각을 메모에 쌓고, 일요일 주간 메일에서 다시 봅니다.",
+  쪼개기: "이대로는 손댈 수 없는 일. 아래 '다음 할 일'로 나눠 주세요.",
+  기다리기: "누구 · 무엇을 기다리는지 메모에, 확인할 날을 마감일에 적으세요.",
+};
+const KIND_NOTE = { 정하기: "선택지 · 기준 · 정한 내용", 고민: "떠오르는 생각을 그때그때", 기다리기: "누구 · 무엇을 기다리는지, 언제 연락했는지" };
+const kindTag = (k) => (k ? `<span class="kind" style="--k:${KIND_COLOR[k] || "var(--fg-3)"}">${esc(k)}</span>` : "");
 let ui = { view: "flow", areas: [], tags: [], owners: [], statuses: [], hideDone: false, q: "", links: true, zoom: "week", sort: ["due", 1] };
 try { Object.assign(ui, JSON.parse(store.get(K_UI, "{}"))); } catch {}
 if (!Array.isArray(ui.tags)) ui.tags = [];
+if (!Array.isArray(ui.kinds)) ui.kinds = [];
 ui.q = "";
 const saveUi = () => store.set(K_UI, JSON.stringify({ ...ui, q: "" }));
 let openId = null;
@@ -599,7 +617,7 @@ function send(body, optimistic) {
 }
 function take(data) {
   if (!data) return;
-  items = data.items || []; areas = data.areas || areas; tags = data.tags || tags; me = data.me || me;
+  items = data.items || []; areas = data.areas || areas; tags = data.tags || tags; kinds = data.kinds || kinds; me = data.me || me;
   // 아직 보내지 않은 입력은 화면에서 지키기
   const open = items.find((i) => i.id === openId); if (open) Object.assign(open, editPatch);
   render();
@@ -630,6 +648,7 @@ function inScope(i) {
   const q = ui.q.trim().toLowerCase();
   return (!ui.areas.length || ui.areas.includes(i.area)) &&
     (!ui.tags.length || ui.tags.includes(i.tag)) &&
+    (!ui.kinds.length || ui.kinds.includes(i.kind || "-")) &&
     (!ui.owners.length || ui.owners.includes(i.owner)) &&
     (!q || `${i.title} ${i.detail} ${i.note} ${i.owner} ${i.tag || ""}`.toLowerCase().includes(q));
 }
@@ -680,10 +699,11 @@ function chip(group, value, label, color) {
 }
 function renderFilters() {
   const f = $("#filters");
-  const any = ui.areas.length || ui.tags.length || ui.owners.length || ui.statuses.length || ui.hideDone || dueOnly;
+  const any = ui.areas.length || ui.tags.length || ui.kinds.length || ui.owners.length || ui.statuses.length || ui.hideDone || dueOnly;
   const usedTags = tags.filter((t) => items.some((i) => i.tag === t.name));
   f.innerHTML = areas.map((a) => chip("areas", a.key, a.name, colorOf(a.key))).join("") +
     (usedTags.length ? `<span class="sep"></span>` + usedTags.map((t) => chip("tags", t.name, "#" + t.name)).join("") : "") +
+    (kinds.length ? `<span class="sep"></span>` + kinds.map((k) => chip("kinds", k, k, KIND_COLOR[k])).join("") + chip("kinds", "-", "종류 없음") : "") +
     `<span class="sep"></span>` + owners().filter((o) => items.some((i) => i.owner === o)).map((o) => chip("owners", o, o)).join("") +
     `<span class="sep"></span>` + STATUS.map((s) => chip("statuses", s.key, s.name)).join("") +
     `<button type="button" class="chip" data-g="hideDone" aria-pressed="${ui.hideDone}">완료 숨기기</button>` +
@@ -724,6 +744,7 @@ function card(it, opts = {}) {
     <div class="c-title">${esc(it.title)}</div>
     <div class="c-meta">${opts.status ? stTag(it.status) : (it.status === "blocked" ? stTag("blocked") : "")}
       <span class="who${isClaude ? " claude" : ""}"><i>${esc((it.owner || "?").slice(0, 1))}</i>${esc(it.owner)}</span>
+      ${kindTag(it.kind)}
       ${dueTag(it)}
       ${it.tag ? `<span class="tag">#${esc(it.tag)}</span>` : ""}
       ${deps ? `<span class="tag" title="선행 업무 ${deps}개${waiting ? `, ${waiting}개 대기` : ""}">← ${deps}${waiting ? " 대기" : ""}</span>` : ""}
@@ -955,7 +976,7 @@ function renderList(v) {
   const list = visible().sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : byOrder(a, b)) * dir; });
   const th = (k, label) => `<th><button type="button" data-sort="${k}" ${key === k ? `data-dir="${dir > 0 ? "↑" : "↓"}"` : ""}>${label}</button></th>`;
   v.innerHTML = `<div class="table-wrap"><table><thead><tr>${th("status", "단계")}${th("title", "업무")}${th("area", "분야")}${th("owner", "담당")}${th("start", "시작")}${th("due", "마감")}${th("deps", "선행")}${th("updatedAt", "최근 변경")}</tr></thead><tbody>${list.map((i) => `<tr data-open="${esc(i.id)}">
-    <td>${stTag(i.status)}</td><td class="t">${esc(i.title)}</td>
+    <td>${stTag(i.status)}</td><td class="t">${kindTag(i.kind)} ${esc(i.title)}</td>
     <td><span class="area" style="--c:${colorOf(i.area)}"><i></i>${esc(areaOf(i.area).name)}</span></td>
     <td>${esc(i.owner)}</td><td class="mono">${i.start ? shortDay(i.start) : ""}</td><td>${dueTag(i)}</td>
     <td class="mono">${i.deps.length || ""}</td><td class="mono" style="color:var(--fg-3)">${i.updatedAt ? relTime(i.updatedAt) : ""}</td></tr>`).join("")}</tbody></table></div>
@@ -987,29 +1008,34 @@ function renderDrawer() {
   const nextFocus = document.activeElement && d.contains(document.activeElement) && document.activeElement.hasAttribute("data-next");
   const others = items.filter((x) => x.id !== it.id && !it.deps.includes(x.id) && !chainDown(it.id).has(x.id));
   const after = items.filter((x) => x.deps.includes(it.id));
+  // '다음 할 일' — 종류가 쪼개기면 맨 위로 올린다
+  const nextSec = `<div>
+      <p class="sec-t">다음 할 일 <span style="font-weight:500;color:var(--fg-3)">— 이 일에서 이어지는 업무 (이 일이 선행으로 걸림)</span></p>
+      ${after.length ? `<div class="deps" style="margin-bottom:8px">${after.map((o) => `<button type="button" class="dep after" data-open="${esc(o.id)}" style="--c:${colorOf(o.area)}">${ICON[o.status]}<b>${esc(o.title)}</b>${o.due ? `<span class="mono" style="color:var(--fg-3)">${shortDay(o.due)}</span>` : ""}</button>`).join("")}</div>` : ""}
+      <form class="d-next"><input class="input" data-next maxlength="120" placeholder="+ 다음 할 일 적고 Enter" aria-label="다음 할 일" autocomplete="off"></form>
+    </div>`;
   d.innerHTML = `<div class="d-head"><span class="area-pill" style="--c:${colorOf(it.area)}"><i></i>${esc(areaOf(it.area).name)}</span><span class="saving">${pending ? "저장 중…" : ""}</span><button class="btn ghost" type="button" data-close-drawer aria-label="닫기">✕</button></div>
   <div class="d-body">
     <input class="d-title" data-f="title" value="${esc(it.title)}" maxlength="120" aria-label="업무 이름">
     <div class="seg" role="group" aria-label="단계">${STATUS.map((s) => `<button type="button" data-st="${s.key}" aria-pressed="${it.status === s.key}">${ICON[s.key]}${s.name}</button>`).join("")}</div>
+    ${kinds.length ? `<div class="seg kinds" role="group" aria-label="종류">${kinds.map((k) => `<button type="button" data-kind="${esc(k)}" aria-pressed="${it.kind === k}" style="--k:${KIND_COLOR[k]}">${esc(k)}</button>`).join("")}</div>
+    <p class="kind-hint">${it.kind ? esc(KIND_HINT[it.kind] || "") : "이 일의 종류를 골라 두면 다루는 방법이 달라집니다."}</p>
+    ${it.kind === "쪼개기" ? nextSec : ""}` : ""}
     <div class="grid2">
       <label class="field">분야<select class="input" data-f="area">${areas.map((a) => `<option value="${a.key}" ${a.key === it.area ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select></label>
       ${tags.length ? `<label class="field">태그<select class="input" data-f="tag"><option value="">없음</option>${tags.map((t) => `<option value="${esc(t.name)}" ${t.name === it.tag ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>`
         : `<label class="field">담당<input class="input" data-f="owner" list="owners" value="${esc(it.owner)}" maxlength="20"></label>`}
       <label class="field">시작일<input class="input" type="date" data-f="start" value="${it.start}"></label>
-      <label class="field">마감일<input class="input" type="date" data-f="due" value="${it.due}"></label>
+      <label class="field">${it.kind === "기다리기" ? "확인할 날" : "마감일"}<input class="input" type="date" data-f="due" value="${it.due}"></label>
     </div>
     <label class="field">설명<textarea class="input" data-f="detail" maxlength="1000" placeholder="무엇을 하는 일인지">${esc(it.detail)}</textarea></label>
-    <label class="field">메모 · 진행 상황<textarea class="input note" data-f="note" maxlength="5000" rows="8" placeholder="지금 어디까지 했는지, 무엇을 기다리는지">${esc(it.note)}</textarea></label>
+    <label class="field">메모 · 진행 상황<textarea class="input note" data-f="note" maxlength="5000" rows="8" placeholder="${esc(KIND_NOTE[it.kind] || "지금 어디까지 했는지, 무엇을 기다리는지")}">${esc(it.note)}</textarea></label>
     <div>
       <p class="sec-t">먼저 끝나야 하는 업무 (선행)</p>
       <div class="deps">${it.deps.map((x) => { const o = items.find((i) => i.id === x); return o ? `<span class="dep" style="--c:${colorOf(o.area)}">${ICON[o.status]}<b>${esc(o.title)}</b><button type="button" data-undep="${esc(x)}" aria-label="선행 업무에서 빼기">×</button></span>` : ""; }).join("")}
       <select class="input" data-adddep style="max-width:100%"><option value="">+ 선행 업무 추가</option>${areas.map((a) => { const l = others.filter((o) => o.area === a.key); return l.length ? `<optgroup label="${esc(a.name)}">${l.map((o) => `<option value="${esc(o.id)}">${esc(o.title)}</option>`).join("")}</optgroup>` : ""; }).join("")}</select></div>
     </div>
-    <div>
-      <p class="sec-t">다음 할 일 <span style="font-weight:500;color:var(--fg-3)">— 이 일에서 이어지는 업무 (이 일이 선행으로 걸림)</span></p>
-      ${after.length ? `<div class="deps" style="margin-bottom:8px">${after.map((o) => `<button type="button" class="dep after" data-open="${esc(o.id)}" style="--c:${colorOf(o.area)}">${ICON[o.status]}<b>${esc(o.title)}</b>${o.due ? `<span class="mono" style="color:var(--fg-3)">${shortDay(o.due)}</span>` : ""}</button>`).join("")}</div>` : ""}
-      <form class="d-next"><input class="input" data-next maxlength="120" placeholder="+ 다음 할 일 적고 Enter" aria-label="다음 할 일" autocomplete="off"></form>
-    </div>
+    ${it.kind === "쪼개기" ? "" : nextSec}
     <div><p class="sec-t">기록</p><ul class="log">${[...it.log].reverse().map((l) => `<li><time>${relTime(l.at)}</time><span><b>${esc(l.by)}</b> · ${esc(l.text)}</span></li>`).join("") || `<li><time></time><span>아직 기록이 없습니다.</span></li>`}</ul></div>
   </div>
   <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button>${it.url ? `<a class="btn ghost" href="${esc(it.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션에서 열기 ↗</a>` : ""}<span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
@@ -1033,7 +1059,7 @@ document.addEventListener("click", (e) => {
   const cday = t.closest(".cal-d"); if (cday && !t.closest("button")) { if (matchMedia("(max-width: 640px)").matches) { calExpand = calExpand === cday.dataset.day ? "" : cday.dataset.day; render(); } else openAdd({ due: cday.dataset.day }); return; }
   const ch = t.closest("#filters [data-g]");
   if (ch) { const g = ch.dataset.g;
-    if (g === "clear") { Object.assign(ui, { areas: [], tags: [], owners: [], statuses: [], hideDone: false }); dueOnly = ""; }
+    if (g === "clear") { Object.assign(ui, { areas: [], tags: [], kinds: [], owners: [], statuses: [], hideDone: false }); dueOnly = ""; }
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
     else if (g === "allDone") { ui.allDone = !ui.allDone; saveUi(); refresh(); return; }
     else { const v = ch.dataset.v; ui[g] = ui[g].includes(v) ? ui[g].filter((x) => x !== v) : [...ui[g], v]; }
@@ -1044,7 +1070,18 @@ document.addEventListener("click", (e) => {
   const srt = t.closest("[data-sort]"); if (srt) { const k = srt.dataset.sort; ui.sort = [k, ui.sort[0] === k ? -ui.sort[1] : 1]; saveUi(); render(); return; }
   const ah = t.closest(".add-here"); if (ah) { openAdd({ area: ah.dataset.area, status: ah.dataset.status }); return; }
   if (t.closest("[data-close-drawer]") || t === $("#scrim")) { closeDrawer(); return; }
-  const st = t.closest("#drawer [data-st]"); if (st) { const it = items.find((i) => i.id === openId); if (it && it.status !== st.dataset.st) send({ op: "status", id: it.id, status: st.dataset.st }, () => { it.status = st.dataset.st; }); return; }
+  const kd = t.closest("#drawer [data-kind]"); if (kd) { const it = items.find((i) => i.id === openId); if (it) { const kind = it.kind === kd.dataset.kind ? "" : kd.dataset.kind; send({ op: "update", id: it.id, fields: { kind } }, () => { it.kind = kind; }); } return; }
+  const st = t.closest("#drawer [data-st]"); if (st) { const it = items.find((i) => i.id === openId); if (!it || it.status === st.dataset.st) return;
+    // 정하기를 끝낼 때는 정한 내용을 한 줄 남긴다 (메모 끝에 붙음). 취소하면 끝내지 않는다
+    if (st.dataset.st === "done" && it.kind === "정하기") {
+      const got = prompt("무엇으로 정했나요? 한 줄로 남겨 주세요 (비워도 됩니다)");
+      if (got === null) return;
+      if (got.trim()) { const note = `${it.note ? it.note + "\n" : ""}→ 정한 내용 (${shortDay(TODAY())}): ${got.trim()}`; flushEdits(); send({ op: "update", id: it.id, fields: { note } }, () => { it.note = note; }); }
+      toast("정한 내용을 남겼습니다. 이어지는 일은 '다음 할 일'에 적어 주세요.");
+    }
+    send({ op: "status", id: it.id, status: st.dataset.st }, () => { it.status = st.dataset.st; });
+    if (st.dataset.st === "done" && it.kind === "정하기") setTimeout(() => { const n = $("#drawer [data-next]"); if (n) n.focus(); }, 50);
+    return; }
   const ud = t.closest("[data-undep]"); if (ud) { const it = items.find((i) => i.id === openId); const deps = it.deps.filter((x) => x !== ud.dataset.undep); send({ op: "update", id: it.id, fields: { deps } }, () => { it.deps = deps; }); return; }
   const del = t.closest("[data-del]");
   if (del) { if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "한 번 더 누르면 삭제"; setTimeout(() => { if (del.isConnected) { del.classList.remove("armed"); del.textContent = "삭제"; } }, 4000); return; }
@@ -1248,6 +1285,8 @@ function openAdd(preset) {
   f.owner.value = store.get(K_USER) || me || "대표"; $("#add-msg").textContent = "";
   $("#add-tag").hidden = !tags.length; $("#add-owner").hidden = Boolean(tags.length);
   f.tag.innerHTML = `<option value="">없음</option>` + tags.map((t) => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("");
+  $("#add-kind").hidden = !kinds.length;
+  f.kind.innerHTML = `<option value="">정하지 않음</option>` + kinds.map((k) => `<option value="${esc(k)}">${esc(k)}</option>`).join("");
   $("#add-dlg").showModal(); f.title.focus();
 }
 // 상세의 '다음 할 일': 같은 분야 · 태그 · 담당으로 새 업무를 만들고 이 일을 선행으로 건다
@@ -1256,6 +1295,7 @@ document.addEventListener("submit", (e) => {
   const inp = $("[data-next]", f), title = inp.value.trim(), it = items.find((i) => i.id === openId); if (!title || !it) return;
   const item = { title, area: it.area, owner: it.owner || "대표", status: "todo", due: "", detail: "", deps: [it.id] };
   if (tags.length) item.tag = it.tag || "";
+  if (kinds.length && it.kind === "쪼개기") item.kind = "행동"; // 쪼갠 일은 바로 손댈 수 있는 행동으로
   inp.value = "";
   send({ op: "add", item }, () => { items.push({ ...item, id: "tmp-" + Date.now(), order: 1e9, note: "", start: "", log: [], updatedAt: new Date().toISOString() }); });
   toast(`다음 할 일 ‘${title}’을(를) 추가했습니다.`);
@@ -1264,6 +1304,7 @@ $("#add-form").addEventListener("submit", (e) => {
   e.preventDefault(); const f = e.target, title = f.title.value.trim(); if (!title) return;
   const item = { title, area: f.area.value, owner: f.owner.value.trim() || "대표", status: f.status.value, due: f.due.value, detail: f.detail.value.trim() };
   if (tags.length) item.tag = f.tag.value;
+  if (kinds.length) item.kind = f.kind.value;
   $("#add-dlg").close();
   send({ op: "add", item }, () => { items.push({ ...item, id: "tmp-" + Date.now(), order: 1e9, note: "", start: "", deps: [], log: [], updatedAt: new Date().toISOString() }); });
   toast(`‘${title}’을(를) 추가했습니다.`);
