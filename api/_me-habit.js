@@ -22,9 +22,10 @@ const gap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 const pick = (i) => ({ id: i.id, title: i.title, area: i.area, due: i.due, status: i.status, url: i.url });
 
 // 오늘의 3가지 추천: 마감 지남 → 오늘 마감 → 진행 중 → 마감 가까운 순 (막힌 일 제외)
+// 바로 손댈 수 있는 일만 — 종류가 행동이거나 아직 안 정한 것 (정하기 · 고민 · 쪼개기 · 기다리기는 뺀다)
 export function suggestTop(items, today) {
   const score = (i) => (i.due && i.due < today ? 0 : i.due === today ? 1 : i.status === 'doing' ? 2 : i.due ? 3 : 4);
-  return items.filter((i) => i.status !== 'done' && i.status !== 'blocked')
+  return items.filter((i) => i.status !== 'done' && i.status !== 'blocked' && (!i.kind || i.kind === '행동'))
     .sort((a, b) => score(a) - score(b) || (a.due || '9').localeCompare(b.due || '9') || a.title.localeCompare(b.title))
     .slice(0, 8);
 }
