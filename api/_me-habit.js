@@ -21,13 +21,46 @@ const kstStartIso = (d) => new Date(`${d}T00:00:00+09:00`).toISOString();
 const gap = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 const pick = (i) => ({ id: i.id, title: i.title, area: i.area, due: i.due, status: i.status, url: i.url });
 
-// 오늘의 3가지 추천: 마감 지남 → 오늘 마감 → 진행 중 → 마감 가까운 순 (막힌 일 제외)
-// 바로 손댈 수 있는 일만 — 종류가 행동이거나 아직 안 정한 것 (정하기 · 고민 · 쪼개기 · 기다리기는 뺀다)
-export function suggestTop(items, today) {
-  const score = (i) => (i.due && i.due < today ? 0 : i.due === today ? 1 : i.status === 'doing' ? 2 : i.due ? 3 : 4);
-  return items.filter((i) => i.status !== 'done' && i.status !== 'blocked' && (!i.kind || i.kind === '행동'))
-    .sort((a, b) => score(a) - score(b) || (a.due || '9').localeCompare(b.due || '9') || a.title.localeCompare(b.title))
-    .slice(0, 8);
+// 오늘의 3가지 추천 — 급한 정도 + 중요한 정도로 점수를 매기고, 왜 골랐는지(why)를 붙인다
+//  급함: 마감 지남 > 오늘 마감 > 3일 안 > 일주일 안
+//  중요: ◆ 단계(쪼개기)에 묶인 일, 이 일을 기다리는 업무, 태그 중요 · 높음, 진행 중
+//  아직 못 하는 일(선행 업무가 남음)은 뒤로. 막힘 · 고민 · 쪼개기는 빼고,
+//  정하기는 마감 3일 안이거나 기다리는 일이 있을 때만, 기다리기는 확인할 날이 되면 넣는다
+const MARK = /^◆\s*/;
+export function suggestTop(items, today, n = 8) {
+  const open = items.filter((i) => i.status !== 'done');
+  const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+  const isStage = (i) => i.kind === '쪼개기' || MARK.test(i.title);
+  // 업무 → 그 업무를 묶은 단계 (여럿이면 마감이 가까운 것)
+  const stageOf = new Map();
+  open.filter(isStage).forEach((m) => (m.deps || []).forEach((d) => {
+    const cur = stageOf.get(d);
+    if (!cur || (m.due || '9') < (cur.due || '9')) stageOf.set(d, m);
+  }));
+  const waiting = (id) => open.filter((x) => !isStage(x) && (x.deps || []).includes(id)).length;
+  const left = (i) => (i.due ? gap(today, i.due) : null);
+  const ok = (i) => i.status !== 'blocked' && !isStage(i) && i.kind !== '고민'
+    && (i.kind !== '정하기' || (left(i) !== null && left(i) <= 3) || waiting(i.id) > 0)
+    && (i.kind !== '기다리기' || (left(i) !== null && left(i) <= 0));
+  const rate = (i) => {
+    let s = 0; const why = []; const l = left(i);
+    if (l !== null && l < 0) { s += 50 + Math.min(-l, 10); why.push(`${-l}일 지남`); }
+    else if (l === 0) { s += 40; why.push(i.kind === '기다리기' ? '확인할 날' : '오늘 마감'); }
+    else if (l !== null && l <= 3) { s += 25 - l * 3; why.push(`D-${l}`); }
+    else if (l !== null && l <= 7) s += 8;
+    const m = stageOf.get(i.id);
+    if (m) { const ml = m.due ? gap(today, m.due) : 30; s += ml <= 14 ? 20 : 10; why.push(m.title.replace(MARK, '')); }
+    const w = waiting(i.id);
+    if (w) { s += Math.min(w, 3) * 8; why.push(`${w}개가 기다림`); }
+    if (i.tag === '중요' || i.tag === '높음') { s += 12; why.push(i.tag); }
+    if (i.status === 'doing') { s += 10; why.push('진행 중'); }
+    if (i.kind === '정하기') why.push('정하기');
+    if ((i.deps || []).some((d) => byId[d] && byId[d].status !== 'done')) { s -= 25; why.push('선행 남음'); }
+    return { s, why };
+  };
+  return open.filter(ok).map((i) => ({ i, ...rate(i) }))
+    .sort((a, b) => b.s - a.s || (a.i.due || '9').localeCompare(b.i.due || '9') || a.i.title.localeCompare(b.i.title))
+    .slice(0, n).map(({ i, why }) => ({ ...i, why }));
 }
 
 export async function loadToday({ notion, dbId, P, items, meta, env = process.env, now = Date.now() }) {
@@ -56,7 +89,7 @@ export async function loadToday({ notion, dbId, P, items, meta, env = process.en
   const yesterdayMissed = yesterday.length > 0;
   const revisit = items.filter((i) => i.status !== 'done' && i.due && gap(i.due, today) > REVISIT_DAYS)
     .sort((a, b) => a.due.localeCompare(b.due)).map((i) => ({ ...pick(i), late: gap(i.due, today) }));
-  const suggest = top.length ? [] : suggestTop(items, today).map(pick);
+  const suggest = top.length ? [] : suggestTop(items, today).map((i) => ({ ...pick(i), why: i.why }));
   return { today, inbox, top, suggest, revisit, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, yesterday, perDay };
 }
 
