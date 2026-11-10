@@ -28,10 +28,25 @@ r = await call('POST', { op: 'update', id: dec.id, fields: { kind: '' } });
 assert.equal(r.out.items.find((i) => i.id === dec.id).kind, '');
 assert.deepEqual(notion.calls.filter((c) => c[0] === 'update').at(-1)[2]['종류'], { select: null });
 
-// 오늘의 3가지 추천: 행동 · 종류 없음만
-const it = (title, kind) => ({ id: title, title, kind, status: 'todo', due: '2026-11-04', start: '', area });
+// 오늘의 3가지 추천: 고민 · 쪼개기는 빼고, 정하기 · 기다리기는 때가 되면 (여기선 마감 지남이라 들어감)
+const it = (title, kind, more = {}) => ({ id: title, title, kind, status: 'todo', due: '2026-11-04', start: '', area, deps: [], ...more });
 const picks = suggestTop(['행동', '', '정하기', '고민', '쪼개기', '기다리기'].map((k) => it(k || '없음', k)), '2026-11-05').map((i) => i.title);
-assert.deepEqual(picks.sort(), ['없음', '행동'].sort());
+assert.deepEqual(picks.sort(), ['없음', '행동', '정하기', '기다리기'].sort());
+// 마감이 먼 정하기 · 아직 확인할 날이 안 된 기다리기는 뺀다
+assert.equal(suggestTop([it('먼 결정', '정하기', { due: '2026-11-20' }), it('먼 기다림', '기다리기', { due: '2026-11-20' })], '2026-11-05').length, 0);
+// 중요한 일이 먼저: 단계(◆)에 묶이고 다른 일이 기다리는 일 > 같은 날 마감인 그냥 일 > 선행이 남은 일
+const today = '2026-11-10';
+const list = [
+  it('그냥 일', '행동', { due: today }),
+  it('회사 주소 정하기', '정하기', { due: today }),
+  it('통신판매업 신고', '행동', { due: '2026-11-12', deps: ['회사 주소 정하기'] }),
+  it('◆ 런칭', '쪼개기', { due: '2026-11-18', deps: ['회사 주소 정하기', '통신판매업 신고'] }),
+  it('막힌 일', '행동', { due: today, status: 'blocked' }),
+];
+const got = suggestTop(list, today);
+assert.deepEqual(got.map((i) => i.title), ['회사 주소 정하기', '그냥 일', '통신판매업 신고']);
+assert.deepEqual(got[0].why, ['오늘 마감', '런칭', '1개가 기다림', '정하기']);
+assert.ok(got[2].why.includes('선행 남음'));
 
 // 주간 메일: 정할 것 · 고민 · 기다리는 것
 const t = { today: '2026-11-08', stats: { week: 0, streak: 0 }, revisit: [] };
