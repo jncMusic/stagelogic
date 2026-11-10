@@ -90,7 +90,12 @@ export async function loadToday({ notion, dbId, P, items, meta, env = process.en
   const revisit = items.filter((i) => i.status !== 'done' && i.due && gap(i.due, today) > REVISIT_DAYS)
     .sort((a, b) => a.due.localeCompare(b.due)).map((i) => ({ ...pick(i), late: gap(i.due, today) }));
   const suggest = top.length ? [] : suggestTop(items, today).map((i) => ({ ...pick(i), why: i.why }));
-  return { today, inbox, top, suggest, revisit, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, yesterday, perDay };
+  // 오늘 챙길 것: 3가지 밖의 오늘까지 마감 · 지난 일 · 오늘 시작하는 일 (다른 칸에 이미 있는 일은 빼서 겹치지 않게)
+  const shown = new Set([...(day.top || []), ...yesterday.map((i) => i.id), ...revisit.map((i) => i.id)]);
+  const watch = items.filter((i) => i.status !== 'done' && !shown.has(i.id) && ((i.due && i.due <= today) || i.start === today))
+    .sort((a, b) => (a.due || '9').localeCompare(b.due || '9') || a.title.localeCompare(b.title))
+    .map((i) => ({ ...pick(i), kind: i.kind || '', late: i.due && i.due < today ? gap(i.due, today) : 0, starts: i.start === today && i.due !== today }));
+  return { today, inbox, top, suggest, revisit, watch, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, yesterday, perDay };
 }
 
 // 주간 리뷰에 쓰는 지난 7일 점검 기록

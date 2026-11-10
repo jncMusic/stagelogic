@@ -1,0 +1,44 @@
+// 오늘 챙길 것 — 3가지 밖의 오늘까지 · 지난 · 오늘 시작 업무. 완료 / 내일로
+import assert from 'node:assert/strict';
+import { createMeHandler } from '../api/_me-core.js';
+import { buildMorning, buildEvening } from '../api/_me-digest.js';
+import { kst, addDays } from '../api/_me-habit.js';
+import { fakeNotion, memStore } from './fake.mjs';
+const env = { NOTION_TOKEN: 'x', ME_PASSWORD: 'pw', INBOX_SINCE: '2000-01-01' };
+const notion = fakeNotion();
+const h = createMeHandler({ notion, store: memStore(), dbId: 'db' }, env);
+const call = async (method, body, url = '/api/me/') => { let code, out; const res = { setHeader() {}, status(c) { code = c; return res; }, json(j) { out = j; return res; } }; await h({ method, url, headers: { 'x-checklist-pass': 'pw' }, body }, res); return { code, out }; };
+const today = kst(), y = addDays(today, -1), tm = addDays(today, 1);
+let r = await call('GET');
+const area = r.out.areas[0].key;
+const add = async (title, f) => { r = await call('POST', { op: 'add', item: { title, area, ...f } }); return r.out.items.find((i) => i.title === title).id; };
+const a = await add('오늘 마감 일', { due: today });
+const b = await add('어제 지난 일', { due: y });
+const c = await add('오늘 시작 일', { start: today, due: addDays(today, 5) });
+const top = await add('3가지로 고른 일', { due: today });
+await add('다음 주 일', { due: addDays(today, 7) });
+r = await call('POST', { op: 'top-set', ids: [top] }, '/api/me/?scope=today');
+const titles = r.out.watch.map((i) => i.title);
+for (const t of ['오늘 마감 일', '어제 지난 일', '오늘 시작 일']) assert.ok(titles.includes(t), t);
+assert.ok(!titles.includes('3가지로 고른 일'), '3가지와 겹치지 않음');
+assert.ok(!titles.includes('다음 주 일'));
+assert.equal(r.out.watch.find((i) => i.id === b).late, 1);
+assert.equal(r.out.watch.find((i) => i.id === c).starts, true);
+// 완료 · 내일로
+r = await call('POST', { op: 'watch', id: a, result: 'done' }, '/api/me/?scope=today');
+assert.ok(!r.out.watch.some((i) => i.id === a));
+r = await call('POST', { op: 'watch', id: b, result: 'tomorrow' }, '/api/me/?scope=today');
+assert.ok(!r.out.watch.some((i) => i.id === b));
+r = await call('POST', { op: 'watch', id: c, result: 'tomorrow' }, '/api/me/?scope=today');
+const all = (await call('GET')).out.items;
+assert.equal(all.find((i) => i.id === a).status, 'done');
+assert.equal(all.find((i) => i.id === b).due, tm);
+assert.equal(all.find((i) => i.id === c).start, tm);
+assert.match(all.find((i) => i.id === b).log.at(-1).text, /오늘 챙길 것: 내일로/);
+assert.equal((await call('POST', { op: 'watch', id: a, result: 'nope' })).code, 400);
+// 메일
+const t = { today, top: [], suggest: [], revisit: [], inbox: [], yesterday: [], watch: [{ id: 'x', title: '세금 납부', area, due: today, late: 0 }], stats: { today: 0, week: 0, streak: 0 } };
+assert.match(buildMorning(t, [], []).html, /오늘 챙길 것/);
+assert.match(buildEvening(t, [], []).html, /세금 납부/);
+assert.match(buildEvening(t, [], []).subject, /챙길 것 1/);
+console.log('watch ok');

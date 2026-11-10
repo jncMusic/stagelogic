@@ -19,15 +19,12 @@ const stat = (t) => `<p style="margin:14px 0 0;padding:10px 12px;background:#f4f
 export function buildMorning(t, items, areas) {
   const today = t.today;
   const open = items.filter((i) => i.status !== 'done');
-  const late = open.filter((i) => i.due && i.due < today && !t.revisit.some((r) => r.id === i.id));
-  const due = open.filter((i) => i.due === today);
   const body = `<h2 style="margin:4px 0;font-size:20px">${t.top.length ? '오늘의 3가지' : '오늘의 3가지를 정하세요'}</h2>
     ${t.yesterdayMissed ? `<p style="margin:6px 0;color:#b02a2a;font-weight:700">어제 점검을 하지 않았습니다. 흐름표 '오늘' 칸에서 먼저 정리해 주세요.</p>${sec('어제 남은 일', (t.yesterday || []).map((i) => row(areas, i)), '#b02a2a')}` : ''}
     ${t.top.length ? `<ol style="margin:6px 0;padding-left:20px">${t.top.map((i) => `<li>${row(areas, i)}</li>`).join('')}</ol>`
       : `<p style="margin:6px 0;color:#555">추천 (흐름표에서 골라 확정하세요)</p><ol style="margin:0;padding-left:20px">${t.suggest.slice(0, 3).map((i) => `<li>${row(areas, i, (i.why || []).length ? ` · ${e(i.why.join(' · '))}` : '')}</li>`).join('')}</ol>`}
     ${sec('다시 정할 일 (3일 넘게 밀림)', t.revisit.map((i) => row(areas, i, ` · <b style="color:#b02a2a">${i.late}일 지남</b>`)), '#b02a2a')}
-    ${sec('마감 지남', late.map((i) => row(areas, i)), '#b02a2a')}
-    ${sec('오늘 마감', due.map((i) => row(areas, i)), '#8a5a00')}
+    ${sec('오늘 챙길 것 (3가지 밖)', (t.watch || []).map((i) => row(areas, i, i.late ? ` · <b style="color:#b02a2a">${i.late}일 지남</b>` : i.starts ? ' · 오늘 시작' : '')), '#8a5a00')}
     ${t.inbox.length ? `<p style="margin:16px 0 0">수집함에 정리 안 된 기록 <b>${t.inbox.length}개</b> — 저녁 점검 때 정리하세요.</p>` : ''}
     ${stat(t)}`;
   const subject = `[오늘] ${md(today)} ${t.top.length ? '오늘의 3가지' : '오늘의 3가지 정하기'}${t.revisit.length ? ` · 다시 정할 일 ${t.revisit.length}` : ''}${t.yesterdayMissed ? ' · 어제 점검 안 함' : ''}`;
@@ -41,8 +38,9 @@ export function buildEvening(t, items, areas) {
     ${t.inbox.length ? sec('① 수집함 (분야를 붙여 주세요)', t.inbox.map((i) => e(i.title))) : '<p style="margin:12px 0 0">① 수집함이 비어 있습니다.</p>'}
     ${t.top.length ? (left.length ? sec('② 오늘의 3가지 중 남은 일', left.map((i) => row(areas, i)), '#8a5a00') : '<p style="margin:12px 0 0">② 오늘의 3가지를 모두 정리했습니다. 👏</p>')
       : '<p style="margin:12px 0 0;color:#b02a2a">② 오늘의 3가지를 정하지 않았습니다. 내일 아침엔 먼저 정해 보세요.</p>'}
+    ${sec('③ 오늘 챙길 것 중 남은 일 (완료 · 내일로)', (t.watch || []).map((i) => row(areas, i, i.late ? ` · ${i.late}일 지남` : '')), '#8a5a00')}
     ${stat(t)}`;
-  const subject = `[점검] ${md(t.today)} ${left.length ? `남은 일 ${left.length}` : t.top.length ? '3가지 정리 완료' : '오늘의 3가지 없음'}${t.inbox.length ? ` · 수집함 ${t.inbox.length}` : ''}`;
+  const subject = `[점검] ${md(t.today)} ${left.length ? `남은 일 ${left.length}` : t.top.length ? '3가지 정리 완료' : '오늘의 3가지 없음'}${(t.watch || []).length ? ` · 챙길 것 ${t.watch.length}` : ''}${t.inbox.length ? ` · 수집함 ${t.inbox.length}` : ''}`;
   return { subject, html: wrap(`${t.today} 저녁`, body) };
 }
 
