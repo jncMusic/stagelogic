@@ -134,7 +134,7 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
   return { loadAll, today, inboxDated };
 }
 
-const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revisit'];
+const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revisit', 'watch'];
 
 export function createMeHandler({ notion, store, dbId, send }, env = process.env) {
   const { loadAll, today: loadTodayFor } = createMeService({ notion, store, dbId }, env);
@@ -203,6 +203,14 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         const label = body.result === 'tomorrow' ? (past ? '오늘로' : '내일로') : '보류';
         note(cur, `${past ? '어제 점검' : '점검'}: ${body.result === 'done' ? '완료' : `${label} — ${why}`}`);
         metaChanged = true;
+        break;
+      }
+      case 'watch': {
+        // 오늘 챙길 것: 완료 / 내일로 (오늘의 3가지 밖이라 이유는 묻지 않는다)
+        if (!cur || !['done', 'tomorrow'].includes(body.result)) return 'bad_request';
+        if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
+        else { const f = nextDay(cur, d); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
+        note(cur, `오늘 챙길 것: ${body.result === 'done' ? '완료' : '내일로'}`);
         break;
       }
       case 'revisit': {
