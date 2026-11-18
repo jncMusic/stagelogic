@@ -12,8 +12,8 @@ import { calUrl } from './_me-cal.js';
 export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', date: '날짜', deadline: '데드라인', kind: '종류' };
 // 업무의 성격 (노션 '종류' 선택지). 화면에서 다루는 방법이 다르다 — 오늘의 3가지 추천은 행동 · 종류 없음만
 export const KINDS = ['행동', '정하기', '고민', '쪼개기', '기다리기'];
-const NOTION_FIELDS = ['title', 'area', 'tag', 'kind', 'status', 'start', 'due'];
-const NAME = { ...FIELD_NAME, tag: '태그', kind: '종류' };
+const NOTION_FIELDS = ['title', 'area', 'tag', 'kind', 'status', 'start', 'due', 'skip'];
+const NAME = { ...FIELD_NAME, tag: '태그', kind: '종류', skip: '안 하기' };
 const META_FIELDS = ['detail', 'note', 'owner', 'deps', 'order'];
 const DONE_DAYS = 60; // 완료한 업무는 최근 60일 안에 고친 것만 불러온다
 const KEEP_VERSIONS = 5;
@@ -46,6 +46,8 @@ export function fromPage(page, meta = {}) {
     title: (pr[P.title]?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)',
     tag: pr[P.tag]?.select?.name || '',
     kind: KINDS.includes(pr[P.kind]?.select?.name) ? pr[P.kind].select.name : '',
+    skip: Boolean(pr[P.skip]?.checkbox), // 안 하기로 한 일 (?skip=1 로 불러올 때만 들어 있음)
+    created: page.created_time || '',
     start, due,
     detail: meta.detail || '', note: meta.note || '', owner: meta.owner || '대표',
     deps: Array.isArray(meta.deps) ? meta.deps : [],
@@ -64,6 +66,7 @@ export function toProps(fields, areas, cur) {
   if ('area' in fields) { const a = areas.find((x) => x.key === fields.area); out[P.area] = { select: a ? { name: a.name } : null }; }
   if ('tag' in fields) out[P.tag] = { select: fields.tag ? { name: fields.tag } : null };
   if ('kind' in fields) out[P.kind] = { select: fields.kind ? { name: fields.kind } : null };
+  if ('skip' in fields) out[P.skip] = { checkbox: Boolean(fields.skip) };
   if ('status' in fields) {
     out[P.doing] = { checkbox: fields.status === 'doing' };
     out[P.blocked] = { checkbox: fields.status === 'blocked' };
@@ -99,8 +102,8 @@ function whoIs(req, env) {
 
 // 노션 · 메타 읽기. 화면 API와 아침 · 저녁 메일이 함께 쓴다.
 export function createMeService({ notion, store, dbId }, env = process.env) {
-  // all = true 이면 오래된 완료까지 전부 (?all=1)
-  async function loadAll(all) {
+  // all = true 이면 오래된 완료까지 전부 (?all=1), withSkip = true 이면 안 하기로 한 일도 (?skip=1)
+  async function loadAll(all, withSkip = false) {
     const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
     const recent = { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] };
     const [db, pages, saved] = await Promise.all([
@@ -108,7 +111,7 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
       notion.queryAll(dbId, {
         and: [
           { property: P.area, select: { is_not_empty: true } },
-          { property: P.skip, checkbox: { equals: false } },
+          ...(withSkip ? [] : [{ property: P.skip, checkbox: { equals: false } }]),
           ...(all ? [] : [recent]),
         ],
       }),
@@ -280,10 +283,11 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         }
         return res.status(200).json({ ...(await loadTodayFor(await loadAll(false))), me });
       }
-      const { areas, tags, items, meta, versions } = await loadAll(q('all') === '1');
+      const withSkip = q('skip') === '1';
+      const { areas, tags, items, meta, versions } = await loadAll(q('all') === '1', withSkip);
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
-      const reply = (list) => res.status(200).json({ items: list.map(clean), areas, tags, kinds: KINDS, me });
+      const reply = (list) => res.status(200).json({ items: list.filter((i) => withSkip || !i.skip).map(clean), areas, tags, kinds: KINDS, me });
       if (req.method === 'GET') return reply(items);
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
@@ -338,6 +342,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           if ('area' in f && keys.includes(f.area)) want.area = f.area;
           if ('tag' in f && (f.tag === '' || tagNames.includes(f.tag))) want.tag = f.tag;
           if ('kind' in f && (f.kind === '' || KINDS.includes(f.kind))) want.kind = f.kind;
+          if ('skip' in f) want.skip = Boolean(f.skip);
           if ('status' in f && STATUSES.includes(f.status)) want.status = f.status;
           if ('start' in f) want.start = okDay(f.start);
           if ('due' in f) want.due = okDay(f.due);
@@ -352,7 +357,8 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           if (Object.keys(toNotion).length) await notion.update(cur.id, toProps(toNotion, areas, cur));
           const lines = [];
           if (changed.includes('status')) lines.push(`상태: ${STATUS_NAME[cur.status]} → ${STATUS_NAME[want.status]}`);
-          const rest = changed.filter((k) => k !== 'status' && k !== 'order');
+          if (changed.includes('skip')) lines.push(want.skip ? '안 하기로 함' : '다시 하기');
+          const rest = changed.filter((k) => k !== 'status' && k !== 'order' && k !== 'skip');
           if (rest.length) lines.push(`수정: ${rest.map((k) => NAME[k]).join(', ')}`);
           const it = lines.length ? logged({ ...want, updatedAt: now }, me, now, lines.join(' · ')) : { ...want, updatedAt: now };
           putMeta(it);

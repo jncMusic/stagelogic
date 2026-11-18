@@ -89,12 +89,18 @@ export async function loadToday({ notion, dbId, P, items, meta, env = process.en
   const yesterdayMissed = yesterday.length > 0;
   const revisit = items.filter((i) => i.status !== 'done' && i.due && gap(i.due, today) > REVISIT_DAYS)
     .sort((a, b) => a.due.localeCompare(b.due)).map((i) => ({ ...pick(i), late: gap(i.due, today) }));
-  const suggest = top.length ? [] : suggestTop(items, today).map((i) => ({ ...pick(i), why: i.why }));
+  // 추천은 3가지를 정한 뒤에도 보낸다 (자리가 남으면 더 고를 수 있게). 이미 고른 일은 빼고 넉넉히
+  const topIds = new Set(day.top || []);
+  const suggest = suggestTop(items.filter((i) => !topIds.has(i.id)), today, 20).map((i) => ({ ...pick(i), kind: i.kind || '', why: i.why }));
   // 오늘 챙길 것: 3가지 밖의 오늘까지 마감 · 지난 일 · 오늘 시작하는 일 (다른 칸에 이미 있는 일은 빼서 겹치지 않게)
   const shown = new Set([...(day.top || []), ...yesterday.map((i) => i.id), ...revisit.map((i) => i.id)]);
-  const watch = items.filter((i) => i.status !== 'done' && !shown.has(i.id) && ((i.due && i.due <= today) || i.start === today))
-    .sort((a, b) => (a.due || '9').localeCompare(b.due || '9') || a.title.localeCompare(b.title))
-    .map((i) => ({ ...pick(i), kind: i.kind || '', late: i.due && i.due < today ? gap(i.due, today) : 0, starts: i.start === today && i.due !== today }));
+  //  + 날짜 없는 반복 업무(결제안내 · 광고관리 …)와 오늘 새로 생긴 날짜 없는 일 — 날짜가 없어서 놓치기 쉽다
+  const repeat = inboxExclude(env);
+  const undated = (i) => !i.due && !i.start && (repeat.has(i.title) || (i.created && kst(Date.parse(i.created)) === today));
+  const watch = items.filter((i) => i.status !== 'done' && !shown.has(i.id) && ((i.due && i.due <= today) || i.start === today || undated(i)))
+    .sort((a, b) => (a.due || '0').localeCompare(b.due || '0') || a.title.localeCompare(b.title))
+    .map((i) => ({ ...pick(i), kind: i.kind || '', late: i.due && i.due < today ? gap(i.due, today) : 0, starts: i.start === today && i.due !== today,
+      repeat: !i.due && !i.start && repeat.has(i.title), fresh: !i.due && !i.start && !repeat.has(i.title) }));
   return { today, inbox, top, suggest, revisit, watch, stats: { today: perDay[today] || 0, streak, week }, yesterdayMissed, yesterday, perDay };
 }
 

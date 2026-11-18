@@ -36,6 +36,24 @@ assert.equal(all.find((i) => i.id === b).due, tm);
 assert.equal(all.find((i) => i.id === c).start, tm);
 assert.match(all.find((i) => i.id === b).log.at(-1).text, /오늘 챙길 것: 내일로/);
 assert.equal((await call('POST', { op: 'watch', id: a, result: 'nope' })).code, 400);
+// 날짜 없는 반복 업무(결제안내 · 광고관리)와 오늘 생긴 날짜 없는 일도 '챙길 것'에
+const rep = await add('광고관리', {});
+const fresh = await add('오늘 떠오른 일', {});
+r = await call('GET', undefined, '/api/me/?scope=today');
+assert.equal(r.out.watch.find((i) => i.id === rep)?.repeat, true);
+assert.equal(r.out.watch.find((i) => i.id === fresh)?.fresh, true);
+// 3가지를 정한 뒤에도 추천이 남는다 (고른 일 빼고)
+assert.ok(r.out.suggest.length > 0); assert.ok(!r.out.suggest.some((i) => i.id === top));
+
+// 안 하기로 한 일: 평소엔 안 보이고 ?skip=1 이면 보인다. 다시 하기
+r = await call('POST', { op: 'update', id: rep, fields: { skip: true } });
+assert.ok(!r.out.items.some((i) => i.id === rep));
+r = await call('GET', undefined, '/api/me/?skip=1');
+assert.equal(r.out.items.find((i) => i.id === rep).skip, true);
+r = await call('POST', { op: 'update', id: rep, fields: { skip: false } }, '/api/me/?skip=1');
+assert.equal(r.out.items.find((i) => i.id === rep).skip, false);
+assert.match(r.out.items.find((i) => i.id === rep).log.at(-1).text, /다시 하기/);
+assert.ok((await call('GET')).out.items.some((i) => i.id === rep));
 // 메일
 const t = { today, top: [], suggest: [], revisit: [], inbox: [], yesterday: [], watch: [{ id: 'x', title: '세금 납부', area, due: today, late: 0 }], stats: { today: 0, week: 0, streak: 0 } };
 assert.match(buildMorning(t, [], []).html, /오늘 챙길 것/);

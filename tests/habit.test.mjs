@@ -48,7 +48,8 @@ r = await call('POST', { op: 'inbox-skip', id: sk.id }); assert.ok(!r.out.inbox.
 // top-set (max 3, only real ids)
 const ids = t2.out.items.filter((i) => i.status !== 'done').map((i) => i.id);
 r = await call('POST', { op: 'top-set', ids: [...ids, 'bogus'] });
-assert.equal(r.out.top.length, Math.min(3, ids.length)); assert.equal(r.out.suggest.length, 0);
+assert.equal(r.out.top.length, Math.min(3, ids.length));
+assert.ok(!r.out.suggest.some((s) => r.out.top.some((t) => t.id === s.id)), '추천은 3가지를 정한 뒤에도 오되 고른 일은 빠진다');
 const [a, b] = r.out.top;
 // check: reason required, done, tomorrow
 assert.equal((await call('POST', { op: 'check', id: b.id, result: 'tomorrow' })).out.error, 'reason_required');
