@@ -293,6 +293,12 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .td-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; } .td-list li { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--line); }
 .td-t { min-width: 0; font-size: .9rem; } .td-acts { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; } .td-acts .chip { padding: 3px 9px; font-size: .78rem; }
 .td-date { width: 128px; padding: 3px 6px; font-size: .78rem; }
+.td-peek { padding: 2px 8px !important; font-size: .74rem !important; color: var(--fg-2); }
+.td-peek[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+.td-memo { flex-basis: 100%; margin: 2px 0 4px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: .84rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+.td-memo b { display: block; font-size: .72rem; color: var(--fg-3); margin-top: 4px; } .td-memo b:first-child { margin-top: 0; }
+.td-memo .btn { margin-top: 6px; padding: 3px 10px; font-size: .78rem; }
+.td-list li > .td-t:not(label) { cursor: pointer; }
 .td-list li.is-done .td-t { color: var(--fg-3); text-decoration: line-through; } .td-list li.is-moved .td-t { color: var(--fg-2); }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
 .a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
@@ -1154,6 +1160,19 @@ window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); }
 let tday = null, tdayAt = 0, tdayBusy = false, pickTop = new Set();
 const tdDates = {}; // 수집함 · 다시 정할 일에서 고른 날짜 (다시 그려도 남게)
 let pickMore = false, pickAdd = false; // 추천 더 보기 · 3가지에 더 고르기
+const peek = new Set(); // 오늘 칸에서 메모를 펼친 업무
+// 오늘 칸의 각 줄에 '메모' 단추를 붙이고, 펼친 줄 아래에 설명 · 메모를 보여 준다 (고르고 정리할 때 바로 보게)
+function decorateMemo(el) {
+  $$(".td-list li", el).forEach((li) => {
+    const id = li.dataset.top || li.dataset.watch || li.dataset.yday || li.dataset.rev || (li.querySelector("[data-pick]") || {}).dataset?.pick;
+    const it = id && items.find((i) => i.id === id); if (!it) return;
+    const has = !!(it.note || it.detail), open = peek.has(id);
+    const btn = `<button type="button" class="chip td-peek" data-peek="${esc(id)}" aria-expanded="${open}" title="설명 · 메모 보기">${has ? "메모" : "메모 없음"}</button>`;
+    const acts = li.querySelector(".td-acts");
+    if (acts) acts.insertAdjacentHTML("afterbegin", btn); else li.insertAdjacentHTML("beforeend", btn);
+    if (open) li.insertAdjacentHTML("beforeend", `<div class="td-memo">${it.detail ? `<b>설명</b>${esc(it.detail)}` : ""}${it.note ? `<b>메모 · 진행 상황</b>${esc(it.note)}` : ""}${has ? "" : `<span class="msg">아직 적힌 설명 · 메모가 없습니다.</span>`}<div><button type="button" class="btn" data-open="${esc(id)}">열어서 고치기</button></div></div>`);
+  });
+}
 async function loadTday(force) {
   if (tdayBusy || (!force && tday && Date.now() - tdayAt < 30000)) return;
   tdayBusy = true;
@@ -1212,6 +1231,7 @@ function renderToday() {
       <span class="td-stat">오늘 기록 <b>${t.stats.today}</b> · 이번 주 <b>${t.stats.week}</b> · 연속 <b>${t.stats.streak}일</b></span></form>
     <div class="td-grid">${yday}${evening ? inbox + top + watch : top + watch + inbox}${revisit}</div>`;
   if (capKeep) $("#cap-in").value = capKeep; if (capFocus) $("#cap-in").focus();
+  decorateMemo(el);
 }
 document.addEventListener("submit", (e) => {
   if (e.target.id !== "cap-form") return;
@@ -1232,6 +1252,9 @@ document.addEventListener("click", (e) => {
   const t = e.target;
   if (t.closest("[data-topset]")) { const ids = [...tday.top.map((i) => i.id), ...pickTop]; const more = tday.top.length > 0; pickTop = new Set(); pickAdd = false; pickMore = false; tdayOp({ op: "top-set", ids }, more ? "오늘의 3가지에 더했습니다." : "오늘의 3가지를 정했습니다."); return; }
   if (t.closest("[data-pickmore]")) { pickMore = true; renderToday(); return; }
+  // 메모 펼치기: '메모' 단추 또는 업무 이름을 누르면 (고르기 목록은 이름을 누르면 체크되므로 단추로)
+  const pk = t.closest("[data-peek]") || (t.closest(".td-list li > span.td-t") && !t.closest("button, input, a") ? t.closest("li").querySelector("[data-peek]") : null);
+  if (pk) { const id = pk.dataset.peek; if (peek.has(id)) peek.delete(id); else peek.add(id); renderToday(); return; }
   if (t.closest("[data-pickadd]")) { pickAdd = !pickAdd; pickTop = new Set(); renderToday(); return; }
   if (t.closest("[data-topreset]")) { pickTop = new Set(tday.top.map((i) => i.id)); tdayOp({ op: "top-set", ids: [] }); return; }
   const tri = t.closest("[data-triage]");
