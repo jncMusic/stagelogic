@@ -95,7 +95,8 @@ textarea.input { resize: vertical; min-height: 72px; line-height: 1.55; }
 .bar .d { background: var(--good); } .bar .g { background: var(--fg-3); }
 .tabs-row { display: flex; align-items: center; gap: 10px; padding: 0 16px 8px; flex-wrap: wrap; }
 .tabs { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
-.tabs button { border: 0; background: transparent; border-radius: 7px; padding: 5px 12px; font-weight: 600; font-size: .86rem; color: var(--fg-2); }
+.tabs button { border: 0; background: transparent; border-radius: 7px; padding: 5px 12px; font-weight: 600; font-size: .86rem; color: var(--fg-2); white-space: nowrap; flex: none; }
+#tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; } /* 탭이 많아도 한 줄로, 좁으면 옆으로 밀어 본다 */
 .tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
 .search { position: relative; margin-left: auto; }
 .search input { width: 220px; padding-left: 30px; }
@@ -266,6 +267,17 @@ main { flex: 1; padding: 12px 16px 60px; min-width: 0; }
 .undated button i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
 
 /* 목록 */
+/* 아카이브 (/me/) — 끝낸 일만 달별로 */
+.arc-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.arc-month { margin: 14px 0 6px; font-size: .82rem; font-weight: 800; color: var(--fg-2); }
+.arc-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.arc-list li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 12px; border-top: 1px solid var(--line); }
+.arc-list li:first-child { border-top: 0; }
+.arc-list .t { font-weight: 600; font-size: .88rem; flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
+.arc-list .meta { font-size: .76rem; color: var(--fg-3); white-space: nowrap; }
+.arc-list .area { display: inline-flex; align-items: center; gap: 5px; font-size: .76rem; color: var(--fg-2); }
+.arc-list .area i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
+.arc-list .chip { padding: 3px 9px; font-size: .76rem; }
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 table { border-collapse: collapse; width: 100%; min-width: 860px; }
 th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: .84rem; vertical-align: middle; }
@@ -519,6 +531,7 @@ let ui = { view: "flow", areas: [], tags: [], owners: [], statuses: [], hideDone
 try { Object.assign(ui, JSON.parse(store.get(K_UI, "{}"))); } catch {}
 if (!Array.isArray(ui.tags)) ui.tags = [];
 if (!Array.isArray(ui.kinds)) ui.kinds = [];
+if (ME && !ui.archInit) { ui.hideDone = true; ui.archInit = true; } // 끝낸 일은 흐름 · 목록에서 숨기고 '아카이브' 탭에서 본다
 ui.q = "";
 const saveUi = () => store.set(K_UI, JSON.stringify({ ...ui, q: "" }));
 let openId = null;
@@ -704,11 +717,12 @@ function render() {
   const scroll = { x: lastView === ui.view ? (v.querySelector(".flow-wrap, .tl, .board, .table-wrap")?.scrollLeft || 0) : null };
   v.innerHTML = "";
   const onAreas = ME && ui.view === "areas";
-  $("#today-panel").hidden = !ME || onAreas; if (ME && !onAreas) renderToday();
-  ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas; });
+  const onArc = ME && ui.view === "archive"; // 아카이브는 끝낸 일만 — 오늘 칸 · 요약 · 알림은 숨긴다
+  $("#today-panel").hidden = !ME || onAreas || onArc; if (ME && !onAreas && !onArc) renderToday();
+  ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas || (onArc && s !== "#filters"); });
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
-  else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList }[ui.view] || renderFlow)(v);
+  else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList, archive: ME ? renderArchive : null }[ui.view] || renderFlow)(v);
   const sc = v.querySelector(".flow-wrap, .tl, .board, .table-wrap"); if (sc && scroll.x !== null) sc.scrollLeft = scroll.x;
   $$("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === ui.view)));
   $("#owners").innerHTML = owners().map((o) => `<option value="${esc(o)}">`).join("");
@@ -1002,6 +1016,31 @@ let calExpand = ""; // 고른 날 ('+n건 더' · 휴대폰에서 누른 날): �
   v.addEventListener("dragend", () => { dragId = null; $$(".cal-d.over", v).forEach((x) => x.classList.remove("over")); });
 })($("#view"));
 
+// ───────── 아카이브 (/me/ 전용) ─────────
+// 끝낸 일만 — 60일보다 오래된 것까지 따로 불러와(?all=1) 끝낸 달별로 묶는다. 되살리기는 '할 일'로
+let archive = null, archiveBusy = false;
+async function loadArchive() {
+  if (archiveBusy) return; archiveBusy = true;
+  try { const d = await api("GET", null, CFG.api + "?all=1"); archive = (d.items || []).filter((i) => i.status === "done"); }
+  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } archive = archive || []; toast("아카이브를 불러오지 못했습니다."); }
+  finally { archiveBusy = false; }
+  if (ui.view === "archive") render();
+}
+function renderArchive(v) {
+  if (!archive) { v.innerHTML = `<div class="empty"><p>끝낸 일을 불러오는 중…</p></div>`; loadArchive(); return; }
+  const list = archive.filter(inScope).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  const month = (i) => (i.updatedAt ? ymd(new Date(i.updatedAt)).slice(0, 7) : "날짜 없음");
+  const groups = [];
+  for (const i of list) { const m = month(i); const g = groups.at(-1); if (g && g.m === m) g.l.push(i); else groups.push({ m, l: [i] }); }
+  const mLabel = (m) => (m.length === 7 ? `${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월` : m);
+  v.innerHTML = `<div class="arc-tools"><span class="msg">끝낸 일 <b>${list.length}</b>개 — 끝낸(마지막으로 고친) 달 순. 위쪽 분야 · 태그 · 검색이 함께 걸립니다.</span><button type="button" class="link" data-arcreload>새로 불러오기</button></div>
+    ${groups.map((g) => `<p class="arc-month">${mLabel(g.m)} <span class="mono" style="color:var(--fg-3)">${g.l.length}</span></p><ul class="arc-list">${g.l.map((i) => `<li>
+      <span class="t">✓ ${esc(i.title)}</span>
+      <span class="area" style="--c:${colorOf(i.area)}"><i></i>${esc(areaOf(i.area).name)}</span>${i.tag ? `<span class="tag">#${esc(i.tag)}</span>` : ""}
+      <span class="meta">${i.due ? `마감 ${shortDay(i.due)} · ` : ""}끝냄 ${i.updatedAt ? shortDay(ymd(new Date(i.updatedAt))) : ""}</span>
+      <button type="button" class="chip" data-revive="${esc(i.id)}" title="'할 일'로 되돌려 흐름표에 다시 올립니다">되살리기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</li>`).join("")}</ul>`).join("") || `<div class="empty"><p>조건에 맞는 끝낸 일이 없습니다.</p></div>`}`;
+}
+
 // ───────── 목록 ─────────
 function renderList(v) {
   const [key, dir] = ui.sort;
@@ -1084,7 +1123,13 @@ document.addEventListener("click", (e) => {
   const t = e.target;
   const c = t.closest(".card"); if (c && !t.closest("button")) { openDrawer(c.dataset.id); return; }
   const op = t.closest("[data-open]"); if (op) { openDrawer(op.dataset.open); return; }
-  const tab = t.closest("#tabs button"); if (tab) { ui.view = tab.dataset.view; saveUi(); render(); return; }
+  const rv = t.closest("[data-revive]");
+  if (rv) { const id = rv.dataset.revive; rv.disabled = true;
+    api("POST", { op: "status", id, status: "todo" }, CFG.api + "?all=1").then(() => { archive = archive.filter((i) => i.id !== id); toast("되살렸습니다. 흐름표에 '할 일'로 올라갑니다."); render(); refresh(); })
+      .catch(() => { rv.disabled = false; toast("되살리지 못했습니다."); });
+    return; }
+  if (t.closest("[data-arcreload]")) { archive = null; render(); return; }
+  const tab = t.closest("#tabs button"); if (tab) { if (tab.dataset.view === "archive") archive = null; /* 들어갈 때마다 새로 */ ui.view = tab.dataset.view; saveUi(); render(); return; }
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
   const cm = t.closest("[data-cal]"); if (cm) { const n = Number(cm.dataset.cal), [yy, mm] = (ui.month || TODAY().slice(0, 7)).split("-").map(Number); ui.month = n ? ymd(new Date(yy, mm - 1 + n, 1)).slice(0, 7) : TODAY().slice(0, 7); saveUi(); render(); return; }
   const cd = t.closest("[data-calday]"); if (cd) { calExpand = cd.dataset.calday; render(); return; }
@@ -1456,8 +1501,8 @@ setInterval(() => { if (pass && !openId && !document.hidden && !document.querySe
 document.title = CFG.title;
 $(".brand").innerHTML = `<b>${esc(CFG.brand)}</b><span>${esc(CFG.sub)}</span>`;
 $(".lock-card h1").textContent = CFG.brand; $(".lock-card p").textContent = CFG.lock;
-if (ME) { $('#tabs [data-view="time"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="cal" aria-selected="false">달력</button>'); $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>'); }
-else if (ui.view === "areas" || ui.view === "cal") ui.view = "flow";
+if (ME) { $('#tabs [data-view="time"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="cal" aria-selected="false">달력</button>'); $('#tabs [data-view="list"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="archive" aria-selected="false">아카이브</button>'); $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>'); }
+else if (ui.view === "areas" || ui.view === "cal" || ui.view === "archive") ui.view = "flow";
 if (ME) $$('#menu-pop [data-act="mail"], #menu-pop [data-act="cal"]').forEach((b) => { b.hidden = false; });
 if (ME) $$('#menu-pop [data-act="areas"], #menu-pop [data-act="import"], #menu-pop [data-act="name"]').forEach((b) => { b.hidden = true; });
 const theme = store.get(K_THEME); if (theme) document.documentElement.dataset.theme = theme;
