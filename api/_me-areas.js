@@ -6,7 +6,7 @@ export const GTD_IDS = {
   areas: 'cb24252d-2bb1-4964-9cc4-b4cdc1ecba8e', // Areas of Responsibility
   lists: 'b7c0b2c8-efa6-4e15-b1d6-052572bd6871', // GTD Lists (Projects, Next actions …)
 };
-const G = { title: 'Action', done: '완료', due: 'Due date', list: 'GTD', area: 'Related Area', priority: 'Priority' };
+export const G = { title: 'Action', done: '완료', due: 'Due date', list: 'GTD', area: 'Related Area', priority: 'Priority' };
 const HIDE_LISTS = ['Reference']; // 자료는 할 일이 아니라서 현황판에서 뺀다
 const LIST_ORDER = ['Projects', 'Project', 'Next actions', 'Next action', 'Waiting for', 'Reminders', 'Reminder', 'Someday / Maybe', 'Someday/Maybe', 'Someday', 'Reference'];
 const DONE_DAYS = 60;

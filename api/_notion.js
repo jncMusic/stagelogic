@@ -32,7 +32,7 @@ export function notionClient(token, fetchImpl = fetch) {
       return out;
     },
     page: (pageId) => call('GET', `/pages/${pageId}`),
-    create: (databaseId, properties) => call('POST', '/pages', { parent: { database_id: databaseId }, properties }),
+    create: (databaseId, properties, children) => call('POST', '/pages', { parent: { database_id: databaseId }, properties, ...(children?.length ? { children } : {}) }),
     update: (pageId, properties) => call('PATCH', `/pages/${pageId}`, { properties }),
     archive: (pageId) => call('PATCH', `/pages/${pageId}`, { archived: true }),
   };

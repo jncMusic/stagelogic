@@ -3,17 +3,17 @@
 // - 노션에 칸이 없는 것: 설명 · 메모 · 담당 · 선행 업무 · 순서 · 기록 → Blob(meta)에 업무 id별로 따로 둔다
 // 분야 줄은 노션 '분야' 선택지 그대로다(노션에서 이름을 바꾸거나 늘리면 화면에도 그대로 반영).
 import { STATUSES, STATUS_NAME, FIELD_NAME, MAX_LOG, NOTE_MAX, text, same, logged } from './_checklist-core.js';
-import { loadAreaBoard, areaOp } from './_me-areas.js';
+import { loadAreaBoard, areaOp, GTD_IDS, G } from './_me-areas.js';
 import { loadToday, kst, addDays, inboxFilter, inboxExclude } from './_me-habit.js';
 import { buildMorning, buildEvening, buildWeekly } from './_me-digest.js';
 import { sendMail } from './_mail.js';
 import { calUrl } from './_me-cal.js';
 
-export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', arc: '아카이브', date: '날짜', deadline: '데드라인', kind: '종류' };
+export const P = { title: '할일 또는 일정', area: '분야', tag: '태그', doing: '시작', done: '완료', blocked: '보류', skip: '안함', gtd: 'GTD System', date: '날짜', deadline: '데드라인', kind: '종류' };
 // 업무의 성격 (노션 '종류' 선택지). 화면에서 다루는 방법이 다르다 — 오늘의 3가지 추천은 행동 · 종류 없음만
 export const KINDS = ['행동', '정하기', '고민', '쪼개기', '기다리기'];
-const NOTION_FIELDS = ['title', 'area', 'tag', 'kind', 'status', 'start', 'due', 'skip', 'arc'];
-const NAME = { ...FIELD_NAME, tag: '태그', kind: '종류', skip: '안 하기', arc: '아카이브' };
+const NOTION_FIELDS = ['title', 'area', 'tag', 'kind', 'status', 'start', 'due', 'skip'];
+const NAME = { ...FIELD_NAME, tag: '태그', kind: '종류', skip: '안 하기' };
 const META_FIELDS = ['detail', 'note', 'owner', 'deps', 'order'];
 const DONE_DAYS = 60; // 완료한 업무는 최근 60일 안에 고친 것만 불러온다
 const KEEP_VERSIONS = 5;
@@ -47,7 +47,8 @@ export function fromPage(page, meta = {}) {
     tag: pr[P.tag]?.select?.name || '',
     kind: KINDS.includes(pr[P.kind]?.select?.name) ? pr[P.kind].select.name : '',
     skip: Boolean(pr[P.skip]?.checkbox), // 안 하기로 한 일 (?skip=1 로 불러올 때만 들어 있음)
-    arc: Boolean(pr[P.arc]?.checkbox), // 아카이브 — 끝내지 않았지만 치워 둔 일 (고민 · 생각 등)
+    arc: false, // 아카이브 — GTD System 'Reference' 페이지와 이어진 일 (loadAll 이 채운다)
+    _gtd: (pr[P.gtd]?.relation || []).map((r) => r.id),
     created: page.created_time || '',
     start, due,
     detail: meta.detail || '', note: meta.note || '', owner: meta.owner || '대표',
@@ -68,7 +69,6 @@ export function toProps(fields, areas, cur) {
   if ('tag' in fields) out[P.tag] = { select: fields.tag ? { name: fields.tag } : null };
   if ('kind' in fields) out[P.kind] = { select: fields.kind ? { name: fields.kind } : null };
   if ('skip' in fields) out[P.skip] = { checkbox: Boolean(fields.skip) };
-  if ('arc' in fields) out[P.arc] = { checkbox: Boolean(fields.arc) };
   if ('status' in fields) {
     out[P.doing] = { checkbox: fields.status === 'doing' };
     out[P.blocked] = { checkbox: fields.status === 'blocked' };
@@ -88,7 +88,10 @@ export function toProps(fields, areas, cur) {
   return out;
 }
 
-const clean = (item) => { const { _hasDeadline, ...rest } = item; return rest; };
+const clean = (item) => { const { _hasDeadline, _gtd, ...rest } = item; return rest; };
+const gtdTitle = (p) => (Object.values(p.properties || {}).find((v) => Array.isArray(v?.title))?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)';
+// 노션 글 칸은 한 덩어리 2000자까지라 나눠 쓴다
+const paragraphs = (s) => { const out = []; for (let i = 0; i < s.length && out.length < 90; i += 1900) out.push({ object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: s.slice(i, i + 1900) } }] } }); return out; };
 
 function whoIs(req, env) {
   const h = req.headers;
@@ -105,11 +108,23 @@ function whoIs(req, env) {
 // 노션 · 메타 읽기. 화면 API와 아침 · 저녁 메일이 함께 쓴다.
 export function createMeService({ notion, store, dbId }, env = process.env) {
   // all = true 이면 오래된 완료까지 전부 (?all=1), withSkip = true 이면 안 하기로 한 일도 (?skip=1)
-  // 아카이브한 일은 items 에서 빼고 archived 로 따로 준다 (흐름 · 오늘 칸 · 추천 · 메일 · 캘린더에 안 나오게)
+  // 아카이브 = 노션 GTD System 의 'Reference'(자료) 목록. 할 일을 아카이브로 보내면 Reference 페이지를 만들어 'GTD System' 칸으로 잇는다.
+  // 이어진 일은 items 에서 빼고 archived 로, 할 일과 이어지지 않은 Reference 페이지는 refs 로 따로 준다
+  let refList = null; // GTD Lists 의 Reference id (한 번 찾으면 기억)
+  async function loadRefs() {
+    try {
+      if (!refList) {
+        const l = (await notion.queryAll(GTD_IDS.lists)).find((p) => gtdTitle(p).toLowerCase() === 'reference');
+        if (!l) return { list: null, pages: [] };
+        refList = l.id;
+      }
+      return { list: refList, pages: await notion.queryAll(GTD_IDS.gtd, { property: G.list, relation: { contains: refList } }) };
+    } catch (err) { console.error('reference', err.message); return { list: null, pages: [] }; } // Reference 를 못 읽어도 화면은 뜨게
+  }
   async function loadAll(all, withSkip = false) {
     const since = new Date(Date.now() - DONE_DAYS * 864e5).toISOString();
     const recent = { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] };
-    const [db, pages, saved] = await Promise.all([
+    const [db, pages, saved, ref] = await Promise.all([
       notion.database(dbId),
       notion.queryAll(dbId, {
         and: [
@@ -119,6 +134,7 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
         ],
       }),
       store.load(),
+      loadRefs(),
     ]);
     const areas = (db.properties?.[P.area]?.select?.options || []).map((o) => ({ key: o.id, name: o.name, color: o.color }));
     const tags = (db.properties?.[P.tag]?.select?.options || []).map((o) => ({ name: o.name, color: o.color }));
@@ -126,8 +142,13 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
     const every = pages.map((p) => fromPage(p, meta[p.id]));
     const ids = new Set(every.map((i) => i.id));
     every.forEach((i) => { i.deps = i.deps.filter((d) => ids.has(d) && d !== i.id); });
+    const refIds = new Set(ref.pages.map((p) => p.id));
+    every.forEach((i) => { i.arc = i._gtd.some((g) => refIds.has(g)); });
+    const linked = new Set(every.flatMap((i) => i._gtd));
+    const refs = ref.pages.filter((p) => !linked.has(p.id)).map((p) => ({ id: p.id, title: gtdTitle(p), url: p.url, updatedAt: p.last_edited_time, ref: true }))
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
     const items = every.filter((i) => !i.arc), archived = every.filter((i) => i.arc);
-    return { areas, tags, items, archived, meta, versions: saved.versions || [] };
+    return { areas, tags, items, archived, refs, refList: ref.list, refIds, meta, versions: saved.versions || [] };
   }
   const today = (loaded, now = Date.now()) => loadToday({ notion, dbId, P, items: loaded.items, meta: loaded.meta, env, now });
   // 수집함 중 날짜가 있는 일 (캘린더 구독용). 끝낸 일은 최근 60일 것만
@@ -136,7 +157,7 @@ export function createMeService({ notion, store, dbId }, env = process.env) {
     const recent = { or: [{ property: P.done, checkbox: { equals: false } }, { timestamp: 'last_edited_time', last_edited_time: { on_or_after: since } }] };
     const pages = await notion.queryAll(dbId, { and: [...inboxFilter(P, env), recent] });
     const exclude = inboxExclude(env);
-    return pages.map((p) => fromPage(p)).filter((i) => (i.due || i.start) && !i.arc && !exclude.has(i.title)).map(clean);
+    return pages.map((p) => fromPage(p)).filter((i) => (i.due || i.start) && !exclude.has(i.title)).map(clean);
   }
   return { loadAll, today, inboxDated };
 }
@@ -146,6 +167,27 @@ const HABIT_OPS = ['capture', 'triage', 'inbox-skip', 'top-set', 'check', 'revis
 export function createMeHandler({ notion, store, dbId, send }, env = process.env) {
   const { loadAll, today: loadTodayFor } = createMeService({ notion, store, dbId }, env);
   const mail = send || ((m) => sendMail(m, env));
+
+  // 아카이브로: Reference 페이지(제목 + 설명 · 메모)를 만들고 할 일의 'GTD System' 칸에 잇는다. 만든 페이지 id 는 meta.ref 에
+  async function toReference(cur, loaded) {
+    if (!loaded.refList) { const e = new Error('no_reference'); e.code = 'no_reference'; throw e; }
+    const page = await notion.create(GTD_IDS.gtd, {
+      [G.title]: { title: [{ text: { content: cur.title } }] },
+      [G.list]: { relation: [{ id: loaded.refList }] },
+    }, paragraphs([cur.detail, cur.note].filter(Boolean).join('\n\n')));
+    await notion.update(cur.id, { [P.gtd]: { relation: [...cur._gtd, page.id].map((id) => ({ id })) } });
+    loaded.meta[cur.id] = { ...(loaded.meta[cur.id] || {}), ref: page.id };
+  }
+  // 꺼내기: Reference 와의 연결을 끊고, 아카이브할 때 만든 페이지는 노션 휴지통으로 (손으로 이은 자료는 그대로 둠)
+  async function fromReference(cur, loaded) {
+    const made = loaded.meta[cur.id]?.ref;
+    await notion.update(cur.id, { [P.gtd]: { relation: cur._gtd.filter((g) => !loaded.refIds.has(g)).map((id) => ({ id })) } });
+    if (made && cur._gtd.includes(made)) await notion.archive(made).catch(() => {});
+    if (loaded.meta[cur.id]) delete loaded.meta[cur.id].ref;
+  }
+  // 오늘 칸의 '보관한 고민 · 생각' — 아카이브한 할 일(끝내지 않은 것) + 할 일과 안 이어진 Reference
+  const keptOf = (l) => [...l.archived.filter((i) => i.status !== 'done').sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .map((i) => ({ id: i.id, title: i.title, area: i.area, kind: i.kind, detail: i.detail, note: i.note, url: i.url, updatedAt: i.updatedAt })), ...l.refs];
 
   // 기록 · 정리 · 점검 (수집함, 오늘의 3가지, 저녁 점검, 다시 정할 일)
   async function habitOp(body, me) {
@@ -216,7 +258,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         // 오늘 챙길 것: 완료 / 내일로 / 아카이브 (오늘의 3가지 밖이라 이유는 묻지 않는다)
         if (!cur || !['done', 'tomorrow', 'archive'].includes(body.result)) return 'bad_request';
         if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
-        else if (body.result === 'archive') await notion.update(cur.id, toProps({ arc: true }, areas, cur));
+        else if (body.result === 'archive') await toReference(cur, loaded);
         else { const f = nextDay(cur, d); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
         note(cur, `오늘 챙길 것: ${{ done: '완료', tomorrow: '내일로', archive: '아카이브로' }[body.result]}`);
         break;
@@ -225,7 +267,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         // 3일 넘게 밀린 일: 날짜를 다시 정하거나 안 하기로 · 아카이브로
         if (!cur) return 'bad_request';
         if (body.skip) { await notion.update(cur.id, { [P.skip]: { checkbox: true } }); note(cur, '다시 정하기: 안 하기'); }
-        else if (body.archive) { await notion.update(cur.id, toProps({ arc: true }, areas, cur)); note(cur, '다시 정하기: 아카이브로'); }
+        else if (body.archive) { await toReference(cur, loaded); note(cur, '다시 정하기: 아카이브로'); }
         else if (okDay(body.due)) { await notion.update(cur.id, toProps({ due: body.due }, areas, cur)); note(cur, `다시 정하기: 마감 ${body.due}`); }
         else return 'bad_request';
         break;
@@ -287,7 +329,8 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           const err = await habitOp(body0, me);
           if (err) return res.status(400).json({ error: err });
         }
-        return res.status(200).json({ ...(await loadTodayFor(await loadAll(false))), me });
+        const l = await loadAll(false);
+        return res.status(200).json({ ...(await loadTodayFor(l)), kept: keptOf(l), me });
       }
       const withSkip = q('skip') === '1', withArc = q('arc') === '1';
       const loaded = await loadAll(q('all') === '1', withSkip);
@@ -296,7 +339,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
       const items = withArc ? [...loaded.items, ...loaded.archived] : loaded.items;
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
-      const reply = (list) => res.status(200).json({ items: list.filter((i) => (withSkip || !i.skip) && (withArc || !i.arc)).map(clean), areas, tags, kinds: KINDS, me });
+      const reply = (list) => res.status(200).json({ items: list.filter((i) => (withSkip || !i.skip) && (withArc || !i.arc)).map(clean), areas, tags, kinds: KINDS, ...(withArc ? { refs: loaded.refs } : {}), me });
       if (req.method === 'GET') return reply(items);
       if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
@@ -306,7 +349,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
       let next = items;
       let metaChanged = false;
       const putMeta = (it) => {
-        meta[it.id] = { detail: it.detail, note: it.note, owner: it.owner, deps: it.deps, order: it.order, log: (it.log || []).slice(-MAX_LOG) };
+        meta[it.id] = { ...(meta[it.id]?.ref ? { ref: meta[it.id].ref } : {}), detail: it.detail, note: it.note, owner: it.owner, deps: it.deps, order: it.order, log: (it.log || []).slice(-MAX_LOG) };
         metaChanged = true;
       };
 
@@ -361,10 +404,11 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           if ('owner' in f) want.owner = text(f.owner, 20) || '대표';
           if ('deps' in f && Array.isArray(f.deps)) want.deps = [...new Set(f.deps.map((d) => text(d, 40)))].filter((d) => has(d) && d !== cur.id).slice(0, 20);
           if ('order' in f && Number.isFinite(Number(f.order))) want.order = Number(f.order);
-          const changed = [...NOTION_FIELDS, ...META_FIELDS].filter((k) => JSON.stringify(want[k]) !== JSON.stringify(cur[k]));
+          const changed = [...NOTION_FIELDS, ...META_FIELDS, 'arc'].filter((k) => JSON.stringify(want[k]) !== JSON.stringify(cur[k]));
           if (!changed.length) return reply(items);
           const toNotion = Object.fromEntries(changed.filter((k) => NOTION_FIELDS.includes(k)).map((k) => [k, want[k]]));
           if (Object.keys(toNotion).length) await notion.update(cur.id, toProps(toNotion, areas, cur));
+          if (changed.includes('arc')) await (want.arc ? toReference(cur, loaded) : fromReference(cur, loaded));
           const lines = [];
           if (changed.includes('status')) lines.push(`상태: ${STATUS_NAME[cur.status]} → ${STATUS_NAME[want.status]}`);
           if (changed.includes('skip')) lines.push(want.skip ? '안 하기로 함' : '다시 하기');
@@ -402,6 +446,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
     } catch (err) {
       console.error('me api', err);
       // 노션 키가 틀렸거나(401) Action_DB를 통합에 공유하지 않았으면(404) 설정 안내를 띄운다
+      if (err.code === 'no_reference') return res.status(409).json({ error: 'no_reference' });
       if (err.status === 401) return res.status(503).json({ error: 'not_configured', missing: ['notion'] });
       if (err.status === 404) return res.status(503).json({ error: 'not_configured', missing: ['notion_share'] });
       return res.status(err.status ? 502 : 500).json({ error: err.status ? 'notion_error' : 'server_error' });

@@ -22,7 +22,7 @@ const db = {
 const calls = [];
 const notion = {
   database: async () => ({ properties: {} }),
-  queryAll: async (id, f) => { calls.push(['q', id]); const rows = db[id] || []; if (id === GTD_IDS.gtd) return f ? rows.filter((r) => !r.properties.완료.checkbox) : rows; return rows; },
+  queryAll: async (id, f) => { calls.push(['q', id, f]); const rows = db[id] || []; if (id === GTD_IDS.gtd) return f ? rows.filter((r) => !r.properties.완료.checkbox) : rows; return rows; },
   update: async (id, pr) => { calls.push(['u', id, pr]); const g = db[GTD_IDS.gtd].find((x) => x.id === id); if (pr['완료']) g.properties.완료 = pr['완료']; return g; },
   create: async (dbid, pr) => { calls.push(['c', dbid, pr]); const id = 'G' + (db[dbid].length + 1); db[dbid].push({ id, url: 'u/' + id, properties: { Action: T(pr.Action.title[0].text.content), 완료: { checkbox: false }, GTD: pr.GTD || rel(), 'Related Area': pr['Related Area'] || rel(), 'Due date': pr['Due date'] || { date: null } } }); return { id }; },
   archive: async () => {},
@@ -46,8 +46,8 @@ r = await call('POST', { op: 'gtd-add', area: 'A2', list: 'L1', title: '건강�
 const added = r.out.areas.find((a) => a.id === 'A2').items[0];
 assert.equal(added.title, '건강검진'); assert.equal(added.list, 'Projects'); assert.equal(added.due, '2026-10-30');
 r = await call('POST', { op: 'gtd-add', area: 'A2', title: '' }); assert.equal(r.code, 400);
-// normal GET still works and didn't hit GTD dbs
-calls.length = 0; r = await call('GET'); assert.equal(r.code, 200); assert.ok(!calls.some((c) => c[1] === GTD_IDS.gtd));
+// 보통 GET 은 GTD System 에서 Reference(아카이브) 목록만 읽는다
+calls.length = 0; r = await call('GET'); assert.equal(r.code, 200); assert.ok(calls.filter((c) => c[1] === GTD_IDS.gtd).every((c) => c[2]?.relation?.contains === 'L4'));
 // 완료 포함 · 자료 보기
 r = await call('GET', undefined, '/api/me/?scope=areas&done=1&refs=1');
 assert.ok(r.out.lists.some((l) => l.name === 'Reference'));

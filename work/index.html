@@ -315,6 +315,10 @@ select.st-sel { border: 0; border-radius: 99px; padding: 2px 8px; font-size: .76
 .td-memo b { display: block; font-size: .72rem; color: var(--fg-3); margin-top: 4px; } .td-memo b:first-child { margin-top: 0; }
 .td-memo .btn { margin-top: 6px; padding: 3px 10px; font-size: .78rem; }
 .td-list li > .td-t:not(label) { cursor: pointer; }
+.td-kept h3 .link { font: inherit; font-weight: 800; color: inherit; margin-left: 0; text-decoration: none; }
+.td-kmemo { flex-basis: 100%; font-size: .82rem; color: var(--fg-2); }
+.td-kmemo summary { cursor: pointer; color: var(--fg-3); font-size: .76rem; }
+.td-kmemo div { margin-top: 4px; padding: 6px 9px; border-radius: 8px; background: var(--surface-2); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; }
 .td-list li.is-done .td-t { color: var(--fg-3); text-decoration: line-through; } .td-list li.is-moved .td-t { color: var(--fg-2); }
 .a-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
 .a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
@@ -1021,12 +1025,12 @@ let calExpand = ""; // 고른 날 ('+n건 더' · 휴대폰에서 누른 날): �
 })($("#view"));
 
 // ───────── 아카이브 (/me/ 전용) ─────────
-// 보관함(아카이브한 일 — 끝내지 않은 고민 · 생각도) + 끝낸 일. 60일보다 오래된 것까지(?all=1&arc=1)
+// 보관함(노션 GTD System 'Reference' — 아카이브한 일 + 할 일과 안 이어진 자료) + 끝낸 일. 60일보다 오래된 것까지(?all=1&arc=1)
 // 보관함은 꺼내기(아카이브 해제), 끝낸 일은 끝낸 달별로 묶고 되살리기는 '할 일'로
-let archive = null, kept = [], archiveBusy = false;
+let archive = null, kept = [], refs = [], archiveBusy = false;
 async function loadArchive() {
   if (archiveBusy) return; archiveBusy = true;
-  try { const d = await api("GET", null, CFG.api + "?all=1&arc=1"); kept = (d.items || []).filter((i) => i.arc); archive = (d.items || []).filter((i) => i.status === "done" && !i.arc); }
+  try { const d = await api("GET", null, CFG.api + "?all=1&arc=1"); kept = (d.items || []).filter((i) => i.arc); refs = d.refs || []; archive = (d.items || []).filter((i) => i.status === "done" && !i.arc); }
   catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } archive = archive || []; toast("아카이브를 불러오지 못했습니다."); }
   finally { archiveBusy = false; }
   if (ui.view === "archive") render();
@@ -1039,14 +1043,15 @@ function renderArchive(v) {
   for (const i of list) { const m = month(i); const g = groups.at(-1); if (g && g.m === m) g.l.push(i); else groups.push({ m, l: [i] }); }
   const mLabel = (m) => (m.length === 7 ? `${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월` : m);
   const box = kept.filter(inScope).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  const refList = refs.filter((i) => !ui.q || i.title.toLowerCase().includes(String(ui.q).toLowerCase()));
   const memo = (i) => (i.detail || i.note ? `<details><summary>설명 · 메모</summary><div>${i.detail ? esc(i.detail) + (i.note ? "\n\n" : "") : ""}${esc(i.note || "")}</div></details>` : "");
   v.innerHTML = `<div class="arc-tools"><span class="msg">위쪽 분야 · 태그 · 검색이 함께 걸립니다.</span><button type="button" class="link" data-arcreload>새로 불러오기</button></div>
-    <p class="arc-h">보관함 <span class="mono" style="color:var(--fg-3)">${box.length}</span><span class="msg">끝내지 않았지만 치워 둔 고민 · 생각. 흐름 · 오늘 칸 · 추천 · 알림에 안 나오고, 주간 메일에서 한 번씩 보여 드려요</span></p>
-    ${box.length ? `<ul class="arc-list">${box.map((i) => `<li>
+    <p class="arc-h">보관함 <span class="mono" style="color:var(--fg-3)">${box.length + refList.length}</span><span class="msg">노션 Reference. 끝내지 않았지만 치워 둔 고민 · 생각 — 흐름 · 추천 · 알림에 안 나오고, 오늘 칸 '보관한 고민 · 생각'과 주간 메일에서 봅니다</span></p>
+    ${box.length + refList.length ? `<ul class="arc-list">` : ""}${box.map((i) => `<li>
       <span class="t">${i.status === "done" ? "✓ " : ""}${esc(i.title)} ${kindTag(i.kind)}</span>
       <span class="area" style="--c:${colorOf(i.area)}"><i></i>${esc(areaOf(i.area).name)}</span>${i.tag ? `<span class="tag">#${esc(i.tag)}</span>` : ""}
       <span class="meta">${i.due ? `마감 ${shortDay(i.due)} · ` : ""}보관 ${i.updatedAt ? shortDay(ymd(new Date(i.updatedAt))) : ""}</span>
-      <button type="button" class="chip" data-unarc="${esc(i.id)}" title="보관함에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}${memo(i)}</li>`).join("")}</ul>` : `<p class="msg">비어 있습니다. 업무를 열어 '아카이브로'를 누르거나, 오늘 칸의 '아카이브'로 보낼 수 있어요.</p>`}
+      <button type="button" class="chip" data-unarc="${esc(i.id)}" title="보관함에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}${memo(i)}</li>`).join("")}${refList.map((i) => `<li><span class="t">${esc(i.title)}</span><span class="tag">노션 자료</span><span class="meta">${i.updatedAt ? `고침 ${shortDay(ymd(new Date(i.updatedAt)))}` : ""}</span>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</li>`).join("")}${box.length + refList.length ? "</ul>" : `<p class="msg">비어 있습니다. 업무를 열어 '아카이브로'를 누르거나, 오늘 칸의 '아카이브'로 보낼 수 있어요.</p>`}
     <p class="arc-h" style="margin-top:22px">끝낸 일 <span class="mono" style="color:var(--fg-3)">${list.length}</span><span class="msg">끝낸(마지막으로 고친) 달 순</span></p>
     ${groups.map((g) => `<p class="arc-month">${mLabel(g.m)} <span class="mono" style="color:var(--fg-3)">${g.l.length}</span></p><ul class="arc-list">${g.l.map((i) => `<li>
       <span class="t">✓ ${esc(i.title)}</span>
@@ -1144,7 +1149,7 @@ document.addEventListener("click", (e) => {
     return; }
   const ua = t.closest("[data-unarc]");
   if (ua) { const id = ua.dataset.unarc; ua.disabled = true;
-    api("POST", { op: "update", id, fields: { arc: false } }, CFG.api + "?all=1&arc=1").then(() => { kept = kept.filter((i) => i.id !== id); toast("보관함에서 꺼냈습니다. 흐름표에 다시 올라갑니다."); render(); refresh(); })
+    api("POST", { op: "update", id, fields: { arc: false } }, CFG.api + "?all=1&arc=1").then(() => { kept = kept.filter((i) => i.id !== id); if (tday) tday.kept = (tday.kept || []).filter((i) => i.id !== id); toast("보관함에서 꺼냈습니다. 흐름표에 다시 올라갑니다."); render(); refresh(); })
       .catch(() => { ua.disabled = false; toast("꺼내지 못했습니다."); });
     return; }
   if (t.closest("[data-arcreload]")) { archive = null; render(); return; }
@@ -1169,7 +1174,7 @@ document.addEventListener("click", (e) => {
   const srt = t.closest("[data-sort]"); if (srt) { const k = srt.dataset.sort; ui.sort = [k, ui.sort[0] === k ? -ui.sort[1] : 1]; saveUi(); render(); return; }
   const ah = t.closest(".add-here"); if (ah) { openAdd({ area: ah.dataset.area, status: ah.dataset.status }); return; }
   if (t.closest("[data-close-drawer]") || t === $("#scrim")) { closeDrawer(); return; }
-  if (t.closest("#drawer [data-arcit]")) { const it = items.find((i) => i.id === openId); if (it) { flushEdits(); send({ op: "update", id: it.id, fields: { arc: true } }, () => { items = items.filter((x) => x.id !== it.id); closeDrawer(); }); toast("아카이브로 보냈습니다. '아카이브' 탭 보관함에서 볼 수 있어요."); } return; }
+  if (t.closest("#drawer [data-arcit]")) { const it = items.find((i) => i.id === openId); if (it) { flushEdits(); send({ op: "update", id: it.id, fields: { arc: true } }, () => { items = items.filter((x) => x.id !== it.id); closeDrawer(); }); toast("아카이브로 보냈습니다. 노션 Reference에 들어갔어요."); } return; }
   const sk2 = t.closest("#drawer [data-skipit], #drawer [data-unskip]");
   if (sk2) { const it = items.find((i) => i.id === openId); if (it) { const skip = sk2.hasAttribute("data-skipit"); flushEdits(); send({ op: "update", id: it.id, fields: { skip } }, () => { it.skip = skip; if (skip && !ui.showSkip) { items = items.filter((x) => x.id !== it.id); closeDrawer(); } }); toast(skip ? "안 하기로 했습니다. 위쪽 '안 하기로 한 일'을 켜면 다시 볼 수 있어요." : "다시 하기로 했습니다."); } return; }
   const kd = t.closest("#drawer [data-kind]"); if (kd) { const it = items.find((i) => i.id === openId); if (it) { const kind = it.kind === kd.dataset.kind ? "" : kd.dataset.kind; send({ op: "update", id: it.id, fields: { kind } }, () => { it.kind = kind; }); } return; }
@@ -1225,6 +1230,7 @@ window.addEventListener("resize", () => { if (ui.view === "flow") drawLinks(); }
 let tday = null, tdayAt = 0, tdayBusy = false, pickTop = new Set();
 const tdDates = {}; // 수집함 · 다시 정할 일에서 고른 날짜 (다시 그려도 남게)
 let pickMore = false, pickAdd = false; // 추천 더 보기 · 3가지에 더 고르기
+let keptOpen = false, keptAll = false; // 오늘 칸 '보관한 고민 · 생각' 펼치기 · 전부 보기
 const peek = new Set(); // 오늘 칸에서 메모를 펼친 업무
 // 오늘 칸의 각 줄에 '메모' 단추를 붙이고, 펼친 줄 아래에 설명 · 메모를 보여 준다 (고르고 정리할 때 바로 보게)
 function decorateMemo(el) {
@@ -1289,12 +1295,19 @@ function renderToday() {
   // 오늘 챙길 것 — 3가지 밖이지만 오늘까지인 일. 놓치지 않게 늘 보인다
   const watch = (t.watch || []).length ? `<div class="td-box"><h3>오늘 챙길 것 <b>${t.watch.length}</b> <span class="msg">오늘까지인 일 · 지난 일 · 오늘 시작 · 날짜 없는 반복 업무 (3가지 밖)</span></h3><ul class="td-list">${t.watch.map((i) => `<li data-watch="${esc(i.id)}"><span class="td-t">${kindTag(i.kind)} ${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${i.late ? `<span class="tag over">${i.late}일 지남</span>` : i.starts ? `<span class="tag">오늘 시작</span>` : i.repeat ? `<span class="tag">반복</span>` : i.fresh ? `<span class="tag">오늘 기록</span>` : `<span class="tag soon">오늘</span>`}</span>
       <span class="td-acts"><button type="button" class="chip" data-wcheck="done">완료</button><button type="button" class="chip" data-wcheck="tomorrow">내일로</button><button type="button" class="chip" data-wcheck="archive" title="끝내지 않아도 치워 둡니다 (아카이브 탭 보관함)">아카이브</button></span></li>`).join("")}</ul></div>` : "";
+  // 보관한 고민 · 생각 — 노션 Reference(아카이브). 평소엔 접어 두고 펼쳐 본다
+  const kRow = (i) => `<li data-kept="${esc(i.id)}"><span class="td-t">${kindTag(i.kind)} ${esc(i.title)} ${i.ref ? `<span class="tag">노션 자료</span>` : `<span class="msg">${aName(i.area)}</span>`}</span>
+      <span class="td-acts">${i.ref ? "" : `<button type="button" class="chip" data-unarc="${esc(i.id)}" title="보관함에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>`}${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</span>
+      ${i.detail || i.note ? `<details class="td-kmemo"><summary>설명 · 메모</summary><div>${i.detail ? esc(i.detail) + (i.note ? "\n\n" : "") : ""}${esc(i.note || "")}</div></details>` : ""}</li>`;
+  const kl = t.kept || [];
+  const kept = kl.length ? `<div class="td-box td-kept"><h3><button type="button" class="link" data-keptopen aria-expanded="${keptOpen}">${keptOpen ? "▾" : "▸"} 보관한 고민 · 생각 <b>${kl.length}</b></button> <span class="msg">노션 Reference — 가끔 펼쳐 보고, 다시 할 일이 되면 꺼내세요</span></h3>
+      ${keptOpen ? `<ul class="td-list">${(keptAll ? kl : kl.slice(0, 10)).map(kRow).join("")}</ul>${!keptAll && kl.length > 10 ? `<button type="button" class="link" data-keptall>더 보기 (${kl.length - 10})</button>` : ""}` : ""}</div>` : "";
   const capKeep = $("#cap-in")?.value || "", capFocus = document.activeElement?.id === "cap-in";
   const yday = (t.yesterday || []).length ? `<div class="td-box warn"><h3>어제 남은 일 <b>${t.yesterday.length}</b> <span class="msg">어제 점검을 하지 않았습니다. 하나씩 정리하면 이 칸이 사라집니다</span></h3><ul class="td-list">${t.yesterday.map((i) => `<li data-yday="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</span>
       <span class="td-acts"><button type="button" class="chip" data-ycheck="done">완료</button><button type="button" class="chip" data-ycheck="tomorrow">오늘로</button><button type="button" class="chip" data-ycheck="hold">보류</button></span></li>`).join("")}</ul></div>` : "";
   el.innerHTML = `<form class="td-cap" id="cap-form"><input class="input" id="cap-in" maxlength="120" placeholder="떠오른 일을 한 줄로 기록하세요 (Enter) — 정리는 저녁에" autocomplete="off" aria-label="빠른 기록">
       <span class="td-stat">오늘 기록 <b>${t.stats.today}</b> · 이번 주 <b>${t.stats.week}</b> · 연속 <b>${t.stats.streak}일</b></span></form>
-    <div class="td-grid">${yday}${evening ? inbox + top + watch : top + watch + inbox}${revisit}</div>`;
+    <div class="td-grid">${yday}${evening ? inbox + top + watch : top + watch + inbox}${revisit}${kept}</div>`;
   if (capKeep) $("#cap-in").value = capKeep; if (capFocus) $("#cap-in").focus();
   decorateMemo(el);
 }
@@ -1317,6 +1330,8 @@ document.addEventListener("click", (e) => {
   const t = e.target;
   if (t.closest("[data-topset]")) { const ids = [...tday.top.map((i) => i.id), ...pickTop]; const more = tday.top.length > 0; pickTop = new Set(); pickAdd = false; pickMore = false; tdayOp({ op: "top-set", ids }, more ? "오늘의 3가지에 더했습니다." : "오늘의 3가지를 정했습니다."); return; }
   if (t.closest("[data-pickmore]")) { pickMore = true; renderToday(); return; }
+  if (t.closest("[data-keptopen]")) { keptOpen = !keptOpen; renderToday(); return; }
+  if (t.closest("[data-keptall]")) { keptAll = true; renderToday(); return; }
   // 메모 펼치기: '메모' 단추 또는 업무 이름을 누르면 (고르기 목록은 이름을 누르면 체크되므로 단추로)
   const pk = t.closest("[data-peek]") || (t.closest(".td-list li > span.td-t") && !t.closest("button, input, a") ? t.closest("li").querySelector("[data-peek]") : null);
   if (pk) { const id = pk.dataset.peek; if (peek.has(id)) peek.delete(id); else peek.add(id); renderToday(); return; }
