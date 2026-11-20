@@ -44,7 +44,7 @@ export function buildEvening(t, items, areas) {
   return { subject, html: wrap(`${t.today} 저녁`, body) };
 }
 
-export function buildWeekly(t, items, areas, meta) {
+export function buildWeekly(t, items, areas, meta, archived = []) {
   const from = addDays(t.today, -6);
   const doneWeek = items.filter((i) => i.status === 'done' && i.updatedAt && kst(Date.parse(i.updatedAt)) >= from);
   const byArea = areas.map((a) => [a.name, doneWeek.filter((i) => i.area === a.key).length]).filter(([, n]) => n);
@@ -64,6 +64,7 @@ export function buildWeekly(t, items, areas, meta) {
     ${sec('정할 것', left('정하기').map((i) => row(areas, i)), '#c25e00')}
     ${sec('고민 중인 것', left('고민').map((i) => row(areas, i)), '#6a4fbf')}
     ${sec('기다리는 것', left('기다리기').map((i) => row(areas, i)))}
+    ${sec('아카이브에 둔 고민 · 생각', archived.filter((i) => i.status !== 'done').sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, 15).map((i) => row(areas, i, i.kind ? ` · ${e(i.kind)}` : '')), '#6a4fbf')}
     <p style="margin:16px 0 0;color:#555">다음 주에 바꿔 볼 한 가지를 노션에 적어 두세요.</p>`;
   return { subject: `[주간 리뷰] ${md(from)}~${md(t.today)} 기록 ${t.stats.week} · 완료 ${doneWeek.length}`, html: wrap(`${from} ~ ${t.today}`, body) };
 }
@@ -78,7 +79,7 @@ export function createMeDigestHandler({ service, send, ready, env = process.env,
       const loaded = await service.loadAll(kind === 'weekly');
       const t = await service.today(loaded, now());
       const m = kind === 'evening' ? buildEvening(t, loaded.items, loaded.areas)
-        : kind === 'weekly' ? buildWeekly(t, loaded.items, loaded.areas, loaded.meta)
+        : kind === 'weekly' ? buildWeekly(t, loaded.items, loaded.areas, loaded.meta, loaded.archived)
           : buildMorning(t, loaded.items, loaded.areas);
       await send({ to: env.ME_MAIL_TO, subject: m.subject, html: m.html });
       return res.status(200).json({ ok: true, kind, subject: m.subject });

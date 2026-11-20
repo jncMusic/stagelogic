@@ -71,7 +71,7 @@ export async function loadToday({ notion, dbId, P, items, meta, env = process.en
   ]);
   const titleOf = (p) => (p.properties?.[P.title]?.title || []).map((t) => t.plain_text).join('').trim() || '(제목 없음)';
   const exclude = inboxExclude(env);
-  const inbox = inboxPages.map((p) => ({ id: p.id, title: titleOf(p), url: p.url, created: p.created_time })).filter((i) => !exclude.has(i.title))
+  const inbox = inboxPages.filter((p) => !p.properties?.[P.arc]?.checkbox).map((p) => ({ id: p.id, title: titleOf(p), url: p.url, created: p.created_time })).filter((i) => !exclude.has(i.title))
     .sort((a, b) => String(a.created).localeCompare(String(b.created)));
   const perDay = {};
   for (const p of created) { const d = kst(Date.parse(p.created_time)); perDay[d] = (perDay[d] || 0) + 1; }
