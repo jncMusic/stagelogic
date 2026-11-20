@@ -185,7 +185,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
     if (made && cur._gtd.includes(made)) await notion.archive(made).catch(() => {});
     if (loaded.meta[cur.id]) delete loaded.meta[cur.id].ref;
   }
-  // 오늘 칸의 '보관한 고민 · 생각' — 아카이브한 할 일(끝내지 않은 것) + 할 일과 안 이어진 Reference
+  // 오늘 칸의 '레퍼런스' — 레퍼런스로 보낸 할 일(끝내지 않은 것) + 할 일과 안 이어진 Reference
   const keptOf = (l) => [...l.archived.filter((i) => i.status !== 'done').sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
     .map((i) => ({ id: i.id, title: i.title, area: i.area, kind: i.kind, detail: i.detail, note: i.note, url: i.url, updatedAt: i.updatedAt })), ...l.refs];
 
@@ -260,14 +260,14 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
         if (body.result === 'done') await notion.update(cur.id, toProps({ status: 'done' }, areas, cur));
         else if (body.result === 'archive') await toReference(cur, loaded);
         else { const f = nextDay(cur, d); if (f) await notion.update(cur.id, toProps(f, areas, cur)); }
-        note(cur, `오늘 챙길 것: ${{ done: '완료', tomorrow: '내일로', archive: '아카이브로' }[body.result]}`);
+        note(cur, `오늘 챙길 것: ${{ done: '완료', tomorrow: '내일로', archive: '레퍼런스로' }[body.result]}`);
         break;
       }
       case 'revisit': {
         // 3일 넘게 밀린 일: 날짜를 다시 정하거나 안 하기로 · 아카이브로
         if (!cur) return 'bad_request';
         if (body.skip) { await notion.update(cur.id, { [P.skip]: { checkbox: true } }); note(cur, '다시 정하기: 안 하기'); }
-        else if (body.archive) { await toReference(cur, loaded); note(cur, '다시 정하기: 아카이브로'); }
+        else if (body.archive) { await toReference(cur, loaded); note(cur, '다시 정하기: 레퍼런스로'); }
         else if (okDay(body.due)) { await notion.update(cur.id, toProps({ due: body.due }, areas, cur)); note(cur, `다시 정하기: 마감 ${body.due}`); }
         else return 'bad_request';
         break;
@@ -335,7 +335,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
       const withSkip = q('skip') === '1', withArc = q('arc') === '1';
       const loaded = await loadAll(q('all') === '1', withSkip);
       const { areas, tags, meta, versions } = loaded;
-      // ?arc=1 이면 아카이브한 일도 함께 (아카이브 탭 보관함 · 꺼내기)
+      // ?arc=1 이면 레퍼런스로 보낸 일도 함께 (레퍼런스 탭 · 꺼내기)
       const items = withArc ? [...loaded.items, ...loaded.archived] : loaded.items;
       const tagNames = tags.map((t) => t.name);
       const keys = areas.map((a) => a.key);
@@ -412,7 +412,7 @@ export function createMeHandler({ notion, store, dbId, send }, env = process.env
           const lines = [];
           if (changed.includes('status')) lines.push(`상태: ${STATUS_NAME[cur.status]} → ${STATUS_NAME[want.status]}`);
           if (changed.includes('skip')) lines.push(want.skip ? '안 하기로 함' : '다시 하기');
-          if (changed.includes('arc')) lines.push(want.arc ? '아카이브로' : '아카이브에서 꺼냄');
+          if (changed.includes('arc')) lines.push(want.arc ? '레퍼런스로' : '레퍼런스에서 꺼냄');
           const rest = changed.filter((k) => k !== 'status' && k !== 'order' && k !== 'skip' && k !== 'arc');
           if (rest.length) lines.push(`수정: ${rest.map((k) => NAME[k]).join(', ')}`);
           const it = lines.length ? logged({ ...want, updatedAt: now }, me, now, lines.join(' · ')) : { ...want, updatedAt: now };

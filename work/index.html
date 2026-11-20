@@ -267,7 +267,7 @@ main { flex: 1; padding: 12px 16px 60px; min-width: 0; }
 .undated button i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
 
 /* 목록 */
-/* 아카이브 (/me/) — 끝낸 일만 달별로 */
+/* 레퍼런스 (/me/) — 노션 GTD System 'Reference' */
 .arc-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
 .arc-month { margin: 14px 0 6px; font-size: .82rem; font-weight: 800; color: var(--fg-2); }
 .arc-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
@@ -539,7 +539,6 @@ let ui = { view: "flow", areas: [], tags: [], owners: [], statuses: [], hideDone
 try { Object.assign(ui, JSON.parse(store.get(K_UI, "{}"))); } catch {}
 if (!Array.isArray(ui.tags)) ui.tags = [];
 if (!Array.isArray(ui.kinds)) ui.kinds = [];
-if (ME && !ui.archInit) { ui.hideDone = true; ui.archInit = true; } // 끝낸 일은 흐름 · 목록에서 숨기고 '아카이브' 탭에서 본다
 ui.q = "";
 const saveUi = () => store.set(K_UI, JSON.stringify({ ...ui, q: "" }));
 let openId = null;
@@ -725,12 +724,12 @@ function render() {
   const scroll = { x: lastView === ui.view ? (v.querySelector(".flow-wrap, .tl, .board, .table-wrap")?.scrollLeft || 0) : null };
   v.innerHTML = "";
   const onAreas = ME && ui.view === "areas";
-  const onArc = ME && ui.view === "archive"; // 아카이브는 끝낸 일만 — 오늘 칸 · 요약 · 알림은 숨긴다
+  const onArc = ME && ui.view === "ref"; // 레퍼런스 탭 — 오늘 칸 · 요약 · 알림은 숨긴다
   $("#today-panel").hidden = !ME || onAreas || onArc; if (ME && !onAreas && !onArc) renderToday();
   ["#filters", "#summary", "#alerts"].forEach((s) => { $(s).hidden = onAreas || (onArc && s !== "#filters"); });
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
-  else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList, archive: ME ? renderArchive : null }[ui.view] || renderFlow)(v);
+  else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList, ref: ME ? renderRef : null }[ui.view] || renderFlow)(v);
   const sc = v.querySelector(".flow-wrap, .tl, .board, .table-wrap"); if (sc && scroll.x !== null) sc.scrollLeft = scroll.x;
   $$("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === ui.view)));
   $("#owners").innerHTML = owners().map((o) => `<option value="${esc(o)}">`).join("");
@@ -1024,40 +1023,31 @@ let calExpand = ""; // 고른 날 ('+n건 더' · 휴대폰에서 누른 날): �
   v.addEventListener("dragend", () => { dragId = null; $$(".cal-d.over", v).forEach((x) => x.classList.remove("over")); });
 })($("#view"));
 
-// ───────── 아카이브 (/me/ 전용) ─────────
-// 보관함(노션 GTD System 'Reference' — 아카이브한 일 + 할 일과 안 이어진 자료) + 끝낸 일. 60일보다 오래된 것까지(?all=1&arc=1)
-// 보관함은 꺼내기(아카이브 해제), 끝낸 일은 끝낸 달별로 묶고 되살리기는 '할 일'로
-let archive = null, kept = [], refs = [], archiveBusy = false;
-async function loadArchive() {
-  if (archiveBusy) return; archiveBusy = true;
-  try { const d = await api("GET", null, CFG.api + "?all=1&arc=1"); kept = (d.items || []).filter((i) => i.arc); refs = d.refs || []; archive = (d.items || []).filter((i) => i.status === "done" && !i.arc); }
-  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } archive = archive || []; toast("아카이브를 불러오지 못했습니다."); }
-  finally { archiveBusy = false; }
-  if (ui.view === "archive") render();
+// ───────── 레퍼런스 (/me/ 전용) ─────────
+// 노션 GTD System 의 'Reference' — 레퍼런스로 보낸 할 일(꺼내기 · 메모 보기) + 할 일과 안 이어진 노션 자료. 끝낸 일은 '완료' 필터로 본다
+let kept = null, refs = [], refBusy = false;
+async function loadRef() {
+  if (refBusy) return; refBusy = true;
+  try { const d = await api("GET", null, CFG.api + "?all=1&arc=1"); kept = (d.items || []).filter((i) => i.arc); refs = d.refs || []; }
+  catch (err) { if (err.status === 401) { lock("비밀번호가 바뀌었거나 맞지 않습니다."); return; } kept = kept || []; toast("레퍼런스를 불러오지 못했습니다."); }
+  finally { refBusy = false; }
+  if (ui.view === "ref") render();
 }
-function renderArchive(v) {
-  if (!archive) { v.innerHTML = `<div class="empty"><p>끝낸 일을 불러오는 중…</p></div>`; loadArchive(); return; }
-  const list = archive.filter(inScope).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  const month = (i) => (i.updatedAt ? ymd(new Date(i.updatedAt)).slice(0, 7) : "날짜 없음");
-  const groups = [];
-  for (const i of list) { const m = month(i); const g = groups.at(-1); if (g && g.m === m) g.l.push(i); else groups.push({ m, l: [i] }); }
-  const mLabel = (m) => (m.length === 7 ? `${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월` : m);
+function renderRef(v) {
+  if (!kept) { v.innerHTML = `<div class="empty"><p>레퍼런스를 불러오는 중…</p></div>`; loadRef(); return; }
   const box = kept.filter(inScope).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  const refList = refs.filter((i) => !ui.q || i.title.toLowerCase().includes(String(ui.q).toLowerCase()));
+  const q = ui.q.trim().toLowerCase();
+  const refList = ui.areas.length || ui.tags.length || ui.kinds.length ? [] : refs.filter((i) => !q || i.title.toLowerCase().includes(q));
   const memo = (i) => (i.detail || i.note ? `<details><summary>설명 · 메모</summary><div>${i.detail ? esc(i.detail) + (i.note ? "\n\n" : "") : ""}${esc(i.note || "")}</div></details>` : "");
-  v.innerHTML = `<div class="arc-tools"><span class="msg">위쪽 분야 · 태그 · 검색이 함께 걸립니다.</span><button type="button" class="link" data-arcreload>새로 불러오기</button></div>
-    <p class="arc-h">보관함 <span class="mono" style="color:var(--fg-3)">${box.length + refList.length}</span><span class="msg">노션 Reference. 끝내지 않았지만 치워 둔 고민 · 생각 — 흐름 · 추천 · 알림에 안 나오고, 오늘 칸 '보관한 고민 · 생각'과 주간 메일에서 봅니다</span></p>
-    ${box.length + refList.length ? `<ul class="arc-list">` : ""}${box.map((i) => `<li>
+  v.innerHTML = `<div class="arc-tools"><span class="msg">노션 Reference — 남겨 두고 다시 볼 고민 · 생각 · 자료. 흐름 · 추천 · 알림에는 안 나오고, 오늘 칸 '레퍼런스'와 주간 메일에서 봅니다.</span><button type="button" class="link" data-arcreload>새로 불러오기</button></div>
+    <p class="arc-h">레퍼런스로 보낸 일 <span class="mono" style="color:var(--fg-3)">${box.length}</span><span class="msg">꺼내면 흐름표로 돌아갑니다</span></p>
+    ${box.length ? `<ul class="arc-list">${box.map((i) => `<li>
       <span class="t">${i.status === "done" ? "✓ " : ""}${esc(i.title)} ${kindTag(i.kind)}</span>
       <span class="area" style="--c:${colorOf(i.area)}"><i></i>${esc(areaOf(i.area).name)}</span>${i.tag ? `<span class="tag">#${esc(i.tag)}</span>` : ""}
-      <span class="meta">${i.due ? `마감 ${shortDay(i.due)} · ` : ""}보관 ${i.updatedAt ? shortDay(ymd(new Date(i.updatedAt))) : ""}</span>
-      <button type="button" class="chip" data-unarc="${esc(i.id)}" title="보관함에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}${memo(i)}</li>`).join("")}${refList.map((i) => `<li><span class="t">${esc(i.title)}</span><span class="tag">노션 자료</span><span class="meta">${i.updatedAt ? `고침 ${shortDay(ymd(new Date(i.updatedAt)))}` : ""}</span>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</li>`).join("")}${box.length + refList.length ? "</ul>" : `<p class="msg">비어 있습니다. 업무를 열어 '아카이브로'를 누르거나, 오늘 칸의 '아카이브'로 보낼 수 있어요.</p>`}
-    <p class="arc-h" style="margin-top:22px">끝낸 일 <span class="mono" style="color:var(--fg-3)">${list.length}</span><span class="msg">끝낸(마지막으로 고친) 달 순</span></p>
-    ${groups.map((g) => `<p class="arc-month">${mLabel(g.m)} <span class="mono" style="color:var(--fg-3)">${g.l.length}</span></p><ul class="arc-list">${g.l.map((i) => `<li>
-      <span class="t">✓ ${esc(i.title)}</span>
-      <span class="area" style="--c:${colorOf(i.area)}"><i></i>${esc(areaOf(i.area).name)}</span>${i.tag ? `<span class="tag">#${esc(i.tag)}</span>` : ""}
-      <span class="meta">${i.due ? `마감 ${shortDay(i.due)} · ` : ""}끝냄 ${i.updatedAt ? shortDay(ymd(new Date(i.updatedAt))) : ""}</span>
-      <button type="button" class="chip" data-revive="${esc(i.id)}" title="'할 일'로 되돌려 흐름표에 다시 올립니다">되살리기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</li>`).join("")}</ul>`).join("") || `<div class="empty"><p>조건에 맞는 끝낸 일이 없습니다.</p></div>`}`;
+      <span class="meta">${i.due ? `마감 ${shortDay(i.due)} · ` : ""}보냄 ${i.updatedAt ? shortDay(ymd(new Date(i.updatedAt))) : ""}</span>
+      <button type="button" class="chip" data-unarc="${esc(i.id)}" title="레퍼런스에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}${memo(i)}</li>`).join("")}</ul>` : `<p class="msg">아직 없습니다. 업무를 열어 '레퍼런스로'를 누르거나, 오늘 칸의 '레퍼런스' 단추로 보낼 수 있어요.</p>`}
+    ${refList.length ? `<p class="arc-h" style="margin-top:22px">노션 자료 <span class="mono" style="color:var(--fg-3)">${refList.length}</span><span class="msg">노션 Reference에 직접 넣은 것</span></p>
+    <ul class="arc-list">${refList.map((i) => `<li><span class="t">${esc(i.title)}</span><span class="meta">${i.updatedAt ? `고침 ${ymd(new Date(i.updatedAt)).replace(/-/g, ". ")}` : ""}</span>${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</li>`).join("")}</ul>` : ""}`;
 }
 
 // ───────── 목록 ─────────
@@ -1130,7 +1120,7 @@ function renderDrawer() {
     ${it.kind === "쪼개기" ? "" : nextSec}
     <div><p class="sec-t">기록</p><ul class="log">${[...it.log].reverse().map((l) => `<li><time>${relTime(l.at)}</time><span><b>${esc(l.by)}</b> · ${esc(l.text)}</span></li>`).join("") || `<li><time></time><span>아직 기록이 없습니다.</span></li>`}</ul></div>
   </div>
-  <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button>${ME && !it.skip ? `<button class="btn ghost" type="button" data-skipit title="지우지 않고 '안 하기로 한 일'로 옮깁니다">안 하기</button>` : ""}${ME ? `<button class="btn ghost" type="button" data-arcit title="끝내지 않아도 치워 둡니다. 흐름 · 오늘 칸 · 추천에서 빠지고 '아카이브' 탭 보관함에서 봅니다">아카이브로</button>` : ""}${it.url ? `<a class="btn ghost" href="${esc(it.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션에서 열기 ↗</a>` : ""}<span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
+  <div class="d-foot"><button class="btn danger" type="button" data-del>삭제</button>${ME && !it.skip ? `<button class="btn ghost" type="button" data-skipit title="지우지 않고 '안 하기로 한 일'로 옮깁니다">안 하기</button>` : ""}${ME ? `<button class="btn ghost" type="button" data-arcit title="노션 Reference로 보냅니다. 흐름 · 추천에서 빠지고 '레퍼런스' 탭과 오늘 칸에서 다시 봅니다">레퍼런스로</button>` : ""}${it.url ? `<a class="btn ghost" href="${esc(it.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션에서 열기 ↗</a>` : ""}<span class="msg" style="margin-left:auto">${it.updatedAt ? "최근 변경 " + relTime(it.updatedAt) : ""}</span></div>`;
   $$("textarea.note", d).forEach(grow);
   if (nextFocus) $("[data-next]", d).focus();
   if (active) { const el = d.querySelector(`[data-f="${active}"]`); if (el) { el.focus(); if (el.setSelectionRange && el.type !== "date") { const n = el.value.length; el.setSelectionRange(n, n); } } }
@@ -1142,18 +1132,13 @@ document.addEventListener("click", (e) => {
   const t = e.target;
   const c = t.closest(".card"); if (c && !t.closest("button")) { openDrawer(c.dataset.id); return; }
   const op = t.closest("[data-open]"); if (op) { openDrawer(op.dataset.open); return; }
-  const rv = t.closest("[data-revive]");
-  if (rv) { const id = rv.dataset.revive; rv.disabled = true;
-    api("POST", { op: "status", id, status: "todo" }, CFG.api + "?all=1").then(() => { archive = archive.filter((i) => i.id !== id); toast("되살렸습니다. 흐름표에 '할 일'로 올라갑니다."); render(); refresh(); })
-      .catch(() => { rv.disabled = false; toast("되살리지 못했습니다."); });
-    return; }
   const ua = t.closest("[data-unarc]");
   if (ua) { const id = ua.dataset.unarc; ua.disabled = true;
-    api("POST", { op: "update", id, fields: { arc: false } }, CFG.api + "?all=1&arc=1").then(() => { kept = kept.filter((i) => i.id !== id); if (tday) tday.kept = (tday.kept || []).filter((i) => i.id !== id); toast("보관함에서 꺼냈습니다. 흐름표에 다시 올라갑니다."); render(); refresh(); })
+    api("POST", { op: "update", id, fields: { arc: false } }, CFG.api + "?all=1&arc=1").then(() => { if (kept) kept = kept.filter((i) => i.id !== id); if (tday) tday.kept = (tday.kept || []).filter((i) => i.id !== id); toast("레퍼런스에서 꺼냈습니다. 흐름표에 다시 올라갑니다."); render(); refresh(); })
       .catch(() => { ua.disabled = false; toast("꺼내지 못했습니다."); });
     return; }
-  if (t.closest("[data-arcreload]")) { archive = null; render(); return; }
-  const tab = t.closest("#tabs button"); if (tab) { if (tab.dataset.view === "archive") archive = null; /* 들어갈 때마다 새로 */ ui.view = tab.dataset.view; saveUi(); render(); return; }
+  if (t.closest("[data-arcreload]")) { kept = null; render(); return; }
+  const tab = t.closest("#tabs button"); if (tab) { if (tab.dataset.view === "ref") kept = null; /* 들어갈 때마다 새로 */ ui.view = tab.dataset.view; saveUi(); render(); return; }
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
   const cm = t.closest("[data-cal]"); if (cm) { const n = Number(cm.dataset.cal), [yy, mm] = (ui.month || TODAY().slice(0, 7)).split("-").map(Number); ui.month = n ? ymd(new Date(yy, mm - 1 + n, 1)).slice(0, 7) : TODAY().slice(0, 7); saveUi(); render(); return; }
   const cd = t.closest("[data-calday]"); if (cd) { calExpand = cd.dataset.calday; render(); return; }
@@ -1174,7 +1159,7 @@ document.addEventListener("click", (e) => {
   const srt = t.closest("[data-sort]"); if (srt) { const k = srt.dataset.sort; ui.sort = [k, ui.sort[0] === k ? -ui.sort[1] : 1]; saveUi(); render(); return; }
   const ah = t.closest(".add-here"); if (ah) { openAdd({ area: ah.dataset.area, status: ah.dataset.status }); return; }
   if (t.closest("[data-close-drawer]") || t === $("#scrim")) { closeDrawer(); return; }
-  if (t.closest("#drawer [data-arcit]")) { const it = items.find((i) => i.id === openId); if (it) { flushEdits(); send({ op: "update", id: it.id, fields: { arc: true } }, () => { items = items.filter((x) => x.id !== it.id); closeDrawer(); }); toast("아카이브로 보냈습니다. 노션 Reference에 들어갔어요."); } return; }
+  if (t.closest("#drawer [data-arcit]")) { const it = items.find((i) => i.id === openId); if (it) { flushEdits(); send({ op: "update", id: it.id, fields: { arc: true } }, () => { items = items.filter((x) => x.id !== it.id); closeDrawer(); }); toast("레퍼런스로 보냈습니다. 노션 Reference에 들어갔어요."); } return; }
   const sk2 = t.closest("#drawer [data-skipit], #drawer [data-unskip]");
   if (sk2) { const it = items.find((i) => i.id === openId); if (it) { const skip = sk2.hasAttribute("data-skipit"); flushEdits(); send({ op: "update", id: it.id, fields: { skip } }, () => { it.skip = skip; if (skip && !ui.showSkip) { items = items.filter((x) => x.id !== it.id); closeDrawer(); } }); toast(skip ? "안 하기로 했습니다. 위쪽 '안 하기로 한 일'을 켜면 다시 볼 수 있어요." : "다시 하기로 했습니다."); } return; }
   const kd = t.closest("#drawer [data-kind]"); if (kd) { const it = items.find((i) => i.id === openId); if (it) { const kind = it.kind === kd.dataset.kind ? "" : kd.dataset.kind; send({ op: "update", id: it.id, fields: { kind } }, () => { it.kind = kind; }); } return; }
@@ -1290,17 +1275,17 @@ function renderToday() {
           <span class="td-acts">${done ? "" : c ? `<span class="tag">${c.r === "tomorrow" ? "내일로" : "보류"}: ${esc(c.why)}</span>` : `<button type="button" class="chip" data-check="done">완료</button><button type="button" class="chip" data-check="tomorrow">내일로</button><button type="button" class="chip" data-check="hold">보류</button>`}</span></li>`; }).join("")}</ul>
       ${room > 0 && !evening ? `<button type="button" class="link" data-pickadd>${pickAdd ? "더 고르기 닫기" : `+ 더 고르기 (${room}자리 남음)`}</button>${pickAdd ? picker() : ""}` : ""}</div>`
     : `<div class="td-box"><h3>오늘의 3가지를 정하세요 <span class="msg">추천에서 3개까지 고르고 확정</span></h3>${picker()}</div>`;
-  const revisit = t.revisit.length ? `<div class="td-box warn"><h3>다시 정할 일 <b>${t.revisit.length}</b> <span class="msg">마감이 3일 넘게 지났습니다. 날짜를 새로 정하거나, 안 하기 · 아카이브로 치우세요</span></h3><ul class="td-list">${t.revisit.map((i) => `<li data-rev="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> <span class="tag over">${i.late}일 지남</span></span>
-      <span class="td-acts"><input class="input td-date" type="date" aria-label="새 마감일" value="${esc(tdDates[i.id] || "")}"><button type="button" class="chip" data-revdate>날짜 바꾸기</button><button type="button" class="chip" data-revskip>안 하기</button><button type="button" class="chip" data-revarc title="끝내지 않아도 치워 둡니다 (아카이브 탭 보관함)">아카이브</button></span></li>`).join("")}</ul></div>` : "";
+  const revisit = t.revisit.length ? `<div class="td-box warn"><h3>다시 정할 일 <b>${t.revisit.length}</b> <span class="msg">마감이 3일 넘게 지났습니다. 날짜를 새로 정하거나, 안 하기 · 레퍼런스로 보내세요</span></h3><ul class="td-list">${t.revisit.map((i) => `<li data-rev="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> <span class="tag over">${i.late}일 지남</span></span>
+      <span class="td-acts"><input class="input td-date" type="date" aria-label="새 마감일" value="${esc(tdDates[i.id] || "")}"><button type="button" class="chip" data-revdate>날짜 바꾸기</button><button type="button" class="chip" data-revskip>안 하기</button><button type="button" class="chip" data-revarc title="노션 Reference로 보냅니다 (레퍼런스 탭)">레퍼런스</button></span></li>`).join("")}</ul></div>` : "";
   // 오늘 챙길 것 — 3가지 밖이지만 오늘까지인 일. 놓치지 않게 늘 보인다
   const watch = (t.watch || []).length ? `<div class="td-box"><h3>오늘 챙길 것 <b>${t.watch.length}</b> <span class="msg">오늘까지인 일 · 지난 일 · 오늘 시작 · 날짜 없는 반복 업무 (3가지 밖)</span></h3><ul class="td-list">${t.watch.map((i) => `<li data-watch="${esc(i.id)}"><span class="td-t">${kindTag(i.kind)} ${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${i.late ? `<span class="tag over">${i.late}일 지남</span>` : i.starts ? `<span class="tag">오늘 시작</span>` : i.repeat ? `<span class="tag">반복</span>` : i.fresh ? `<span class="tag">오늘 기록</span>` : `<span class="tag soon">오늘</span>`}</span>
-      <span class="td-acts"><button type="button" class="chip" data-wcheck="done">완료</button><button type="button" class="chip" data-wcheck="tomorrow">내일로</button><button type="button" class="chip" data-wcheck="archive" title="끝내지 않아도 치워 둡니다 (아카이브 탭 보관함)">아카이브</button></span></li>`).join("")}</ul></div>` : "";
-  // 보관한 고민 · 생각 — 노션 Reference(아카이브). 평소엔 접어 두고 펼쳐 본다
+      <span class="td-acts"><button type="button" class="chip" data-wcheck="done">완료</button><button type="button" class="chip" data-wcheck="tomorrow">내일로</button><button type="button" class="chip" data-wcheck="archive" title="노션 Reference로 보냅니다 (레퍼런스 탭)">레퍼런스</button></span></li>`).join("")}</ul></div>` : "";
+  // 레퍼런스 — 노션 Reference 에 보낸 고민 · 생각 · 자료. 평소엔 접어 두고 펼쳐 본다
   const kRow = (i) => `<li data-kept="${esc(i.id)}"><span class="td-t">${kindTag(i.kind)} ${esc(i.title)} ${i.ref ? `<span class="tag">노션 자료</span>` : `<span class="msg">${aName(i.area)}</span>`}</span>
-      <span class="td-acts">${i.ref ? "" : `<button type="button" class="chip" data-unarc="${esc(i.id)}" title="보관함에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>`}${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</span>
+      <span class="td-acts">${i.ref ? "" : `<button type="button" class="chip" data-unarc="${esc(i.id)}" title="레퍼런스에서 꺼내 흐름표에 다시 올립니다">꺼내기</button>`}${i.url ? `<a class="chip" href="${esc(i.url)}" target="_blank" rel="noopener" style="text-decoration:none">노션 ↗</a>` : ""}</span>
       ${i.detail || i.note ? `<details class="td-kmemo"><summary>설명 · 메모</summary><div>${i.detail ? esc(i.detail) + (i.note ? "\n\n" : "") : ""}${esc(i.note || "")}</div></details>` : ""}</li>`;
   const kl = t.kept || [];
-  const kept = kl.length ? `<div class="td-box td-kept"><h3><button type="button" class="link" data-keptopen aria-expanded="${keptOpen}">${keptOpen ? "▾" : "▸"} 보관한 고민 · 생각 <b>${kl.length}</b></button> <span class="msg">노션 Reference — 가끔 펼쳐 보고, 다시 할 일이 되면 꺼내세요</span></h3>
+  const kept = kl.length ? `<div class="td-box td-kept"><h3><button type="button" class="link" data-keptopen aria-expanded="${keptOpen}">${keptOpen ? "▾" : "▸"} 레퍼런스 <b>${kl.length}</b></button> <span class="msg">남겨 둔 고민 · 생각 · 자료 — 가끔 펼쳐 보고, 다시 할 일이 되면 꺼내세요</span></h3>
       ${keptOpen ? `<ul class="td-list">${(keptAll ? kl : kl.slice(0, 10)).map(kRow).join("")}</ul>${!keptAll && kl.length > 10 ? `<button type="button" class="link" data-keptall>더 보기 (${kl.length - 10})</button>` : ""}` : ""}</div>` : "";
   const capKeep = $("#cap-in")?.value || "", capFocus = document.activeElement?.id === "cap-in";
   const yday = (t.yesterday || []).length ? `<div class="td-box warn"><h3>어제 남은 일 <b>${t.yesterday.length}</b> <span class="msg">어제 점검을 하지 않았습니다. 하나씩 정리하면 이 칸이 사라집니다</span></h3><ul class="td-list">${t.yesterday.map((i) => `<li data-yday="${esc(i.id)}"><span class="td-t">${esc(i.title)} <span class="msg">${aName(i.area)}</span> ${due(i)}</span>
@@ -1345,7 +1330,7 @@ document.addEventListener("click", (e) => {
     tdayOp({ op: "triage", id: li.dataset.inbox, area: tri.dataset.triage, due }, "흐름표로 옮겼습니다."); return;
   }
   const sk = t.closest("[data-inskip]"); if (sk) { tdayOp({ op: "inbox-skip", id: sk.closest("[data-inbox]").dataset.inbox }, "안 하기로 했습니다."); return; }
-  const wc = t.closest("[data-wcheck]"); if (wc) { tdayOp({ op: "watch", id: wc.closest("[data-watch]").dataset.watch, result: wc.dataset.wcheck }, { done: "완료했습니다.", tomorrow: "내일로 옮겼습니다.", archive: "아카이브로 보냈습니다." }[wc.dataset.wcheck]); return; }
+  const wc = t.closest("[data-wcheck]"); if (wc) { tdayOp({ op: "watch", id: wc.closest("[data-watch]").dataset.watch, result: wc.dataset.wcheck }, { done: "완료했습니다.", tomorrow: "내일로 옮겼습니다.", archive: "레퍼런스로 보냈습니다." }[wc.dataset.wcheck]); return; }
   const yc = t.closest("[data-ycheck]");
   if (yc) {
     const id = yc.closest("[data-yday]").dataset.yday, r = yc.dataset.ycheck; let why = "";
@@ -1360,7 +1345,7 @@ document.addEventListener("click", (e) => {
   }
   const rd = t.closest("[data-revdate]");
   if (rd) { const li = rd.closest("[data-rev]"), d = $(".td-date", li).value; if (!d) { toast("새 마감일을 먼저 고르세요."); return; } tdayOp({ op: "revisit", id: li.dataset.rev, due: d }, "마감일을 다시 정했습니다."); return; }
-  const ra = t.closest("[data-revarc]"); if (ra) { tdayOp({ op: "revisit", id: ra.closest("[data-rev]").dataset.rev, archive: true }, "아카이브로 보냈습니다."); return; }
+  const ra = t.closest("[data-revarc]"); if (ra) { tdayOp({ op: "revisit", id: ra.closest("[data-rev]").dataset.rev, archive: true }, "레퍼런스로 보냈습니다."); return; }
   const rs = t.closest("[data-revskip]"); if (rs) { tdayOp({ op: "revisit", id: rs.closest("[data-rev]").dataset.rev, skip: true }, "안 하기로 했습니다."); return; }
 });
 
@@ -1537,8 +1522,8 @@ setInterval(() => { if (pass && !openId && !document.hidden && !document.querySe
 document.title = CFG.title;
 $(".brand").innerHTML = `<b>${esc(CFG.brand)}</b><span>${esc(CFG.sub)}</span>`;
 $(".lock-card h1").textContent = CFG.brand; $(".lock-card p").textContent = CFG.lock;
-if (ME) { $('#tabs [data-view="time"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="cal" aria-selected="false">달력</button>'); $('#tabs [data-view="list"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="archive" aria-selected="false">아카이브</button>'); $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>'); }
-else if (ui.view === "areas" || ui.view === "cal" || ui.view === "archive") ui.view = "flow";
+if (ME) { $('#tabs [data-view="time"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="cal" aria-selected="false">달력</button>'); $('#tabs [data-view="list"]').insertAdjacentHTML("afterend", '<button role="tab" data-view="ref" aria-selected="false">레퍼런스</button>'); $("#tabs").insertAdjacentHTML("beforeend", '<button role="tab" data-view="areas" aria-selected="false">영역</button>'); }
+else if (ui.view === "areas" || ui.view === "cal" || ui.view === "ref") ui.view = "flow";
 if (ME) $$('#menu-pop [data-act="mail"], #menu-pop [data-act="cal"]').forEach((b) => { b.hidden = false; });
 if (ME) $$('#menu-pop [data-act="areas"], #menu-pop [data-act="import"], #menu-pop [data-act="name"]').forEach((b) => { b.hidden = true; });
 const theme = store.get(K_THEME); if (theme) document.documentElement.dataset.theme = theme;

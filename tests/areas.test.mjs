@@ -46,7 +46,7 @@ r = await call('POST', { op: 'gtd-add', area: 'A2', list: 'L1', title: '건강�
 const added = r.out.areas.find((a) => a.id === 'A2').items[0];
 assert.equal(added.title, '건강검진'); assert.equal(added.list, 'Projects'); assert.equal(added.due, '2026-10-30');
 r = await call('POST', { op: 'gtd-add', area: 'A2', title: '' }); assert.equal(r.code, 400);
-// 보통 GET 은 GTD System 에서 Reference(아카이브) 목록만 읽는다
+// 보통 GET 은 GTD System 에서 Reference(레퍼런스) 목록만 읽는다
 calls.length = 0; r = await call('GET'); assert.equal(r.code, 200); assert.ok(calls.filter((c) => c[1] === GTD_IDS.gtd).every((c) => c[2]?.relation?.contains === 'L4'));
 // 완료 포함 · 자료 보기
 r = await call('GET', undefined, '/api/me/?scope=areas&done=1&refs=1');
