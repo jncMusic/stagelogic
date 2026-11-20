@@ -5,6 +5,9 @@
 const STAGE_BUDGET = ['300만 원 이하', '300~700만 원', '700~1,500만 원', '1,500~3,000만 원', '3,000만 원 이상', '상의하고 싶어요'];
 const PAY = ['계약할 때 한 번에', '선금 · 잔금 나눠서', '끝난 뒤 한 번에', '기관 · 회사 규정대로'];
 const BILL = ['세금계산서', '카드 결제', '현금영수증', '상관없어요'];
+// /web/ 의 상품 버튼(?plan= · ?care=)이 미리 골라 두는 답
+const WEB_PLAN = { basic: '실속형 (150만 원부터)', custom: '맞춤형 (상담 후 결정)' };
+const WEB_CARE = { basic: '기본 관리 (월 3만 원부터)', full: '운영 대행 (월 15만 원부터)' };
 const payQs = (budget) => [
   { k: 'budget', q: '생각하시는 금액대', type: 'one', opts: budget },
   { k: 'pay', q: '결제는 어떻게 하시나요?', type: 'one', opts: PAY },
@@ -56,13 +59,20 @@ const FLOWS = {
     title: '홈페이지로 무엇을 하고 싶으세요?',
     qs: [
       { k: 'who', q: '어떤 곳의 홈페이지인가요?', type: 'one', opts: ['협회 · 연맹', '오케스트라 · 합창단', '음악 · 예술학원', '공연 · 축제', '개인 연주자 · 강사', '기타'] },
+      { k: 'plan', q: '생각하시는 상품', type: 'one', opts: [WEB_PLAN.basic, WEB_PLAN.custom, '잘 모르겠어요'] },
       { k: 'now', q: '지금 홈페이지가 있나요?', type: 'one', opts: ['없어요', '있는데 새로 만들고 싶어요', '있는 걸 고치고 싶어요'] },
       { k: 'url', q: '지금 홈페이지 · 블로그 주소', type: 'text', ph: '있으면 적어 주세요' },
       { k: 'goals', q: '홈페이지로 하고 싶은 일', type: 'many', opts: ['우리를 제대로 소개하기', '상담 · 문의 더 받기', '회원 가입 받고 관리하기', '공지 · 소식 올리기', '공연 일정 알리기', '온라인 신청 · 접수 받기', '네이버 · 구글에서 찾아지기'] },
-      { k: 'edit', q: '내용은 누가 고치면 좋겠어요?', type: 'one', opts: ['우리가 직접 자주', '가끔 우리가', '맡기고 싶어요'] },
+      { k: 'ref', q: '마음에 드는 홈페이지', type: 'text', ph: '참고하고 싶은 사이트 주소나 느낌' },
+      { k: 'ready', q: '준비된 자료', type: 'many', opts: ['로고', '소개 글', '사진', '아직 없어요'] },
+      { k: 'care', q: '오픈 뒤 관리는 어떻게 할까요?', type: 'one', opts: ['우리가 직접 할게요', WEB_CARE.basic, WEB_CARE.full, '상의하고 싶어요'] },
       { k: 'open', q: '언제까지 열고 싶으세요?', type: 'date', none: '여유 있어요' },
     ],
-    money: payQs(['150만 원 안팎', '150~300만 원', '300~600만 원', '600만 원 이상', '상의하고 싶어요']),
+    // 제작비 결제는 계약 30% · 시안 30% · 오픈 40% 로 정해져 있어(/web/#pay) 나눠 내기는 묻지 않는다
+    money: [
+      { k: 'budget', q: '생각하시는 금액대', type: 'one', opts: ['150만 원 안팎', '150~300만 원', '300~600만 원', '600만 원 이상', '상의하고 싶어요'] },
+      { k: 'bill', q: '필요한 증빙', type: 'one', opts: BILL },
+    ],
   },
   classlogic: {
     icon: '📒', goal: '학원 일을 덜고 싶어요', sub: '출결 · 시간표 · 수납 · 학부모 연락 (클래스로직)', label: '클래스로직',
@@ -181,8 +191,16 @@ if (form) {
   form.addEventListener('input', (e) => { if (e.target.matches('input[type=text], input:not([type])')) refreshSummary(); });
 
   // 예전 주소(/contact/?type=stage 등)로 들어오면 그 일을 미리 골라 둔다.
-  const preset = new URLSearchParams(location.search).get('type');
+  const params = new URLSearchParams(location.search);
+  const preset = params.get('type');
   if (preset && FLOWS[preset]) choose(preset, false);
+  // /web/ 의 실속형 · 맞춤형 · 관리 버튼으로 들어오면 그 답도 골라 둔다
+  if (preset === 'web') {
+    const pick = (k, v) => { const el = v && [...form.querySelectorAll(`[name="q_${k}"]`)].find((i) => i.value === v); if (el) el.checked = true; };
+    pick('plan', WEB_PLAN[params.get('plan')]);
+    pick('care', WEB_CARE[params.get('care')]);
+    refreshSummary();
+  }
 
   const say = (msg) => { status.hidden = false; status.textContent = msg; };
 

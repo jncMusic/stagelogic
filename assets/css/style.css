@@ -310,13 +310,9 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .browser-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #eeebe4; }
 .browser-bar i { width: 10px; height: 10px; border-radius: 50%; background: #d3cec3; }
 .browser-bar span { margin-left: 10px; flex: 1; background: var(--white); border-radius: 6px; padding: 3px 10px; font-size: .78rem; color: var(--muted); }
-.browser-body { padding: 14px; display: grid; gap: 12px; }
-.mock-nav { height: 12px; width: 60%; border-radius: 4px; background: #e6e2d9; }
-.mock-hero { height: 150px; border-radius: 10px; display: grid; place-items: center; color: var(--white); font-size: 1.3rem; letter-spacing: -0.02em; }
-.kba .mock-hero { background: linear-gradient(135deg, #1f2f5c, #34508f); }
-.jnc .mock-hero { background: linear-gradient(135deg, #3a2a1c, #9a6a33); }
-.mock-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.mock-row span { height: 56px; border-radius: 8px; background: #f1eee7; }
+.browser > img { display: block; width: 100%; height: auto; }
+.case-shot { position: relative; padding: 0 18px 28px 0; }
+.phone-shot { position: absolute; right: 0; bottom: 0; width: 24%; height: auto; border-radius: 16px; border: 5px solid #12131a; background: #12131a; box-shadow: 0 18px 36px rgba(18, 19, 26, .25); }
 
 .scope h3, .who h3 { font-size: 1.05rem; }
 .scope p, .who p { font-size: .92rem; color: var(--muted); margin: 0; }
@@ -527,4 +523,9 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 .faq details[open] summary::after { content: "−"; }
 .faq details p { margin: 0 0 18px; color: #44434c; }
 .faq-more { margin: 24px 0 0; color: var(--muted); }
+.pay-steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 820px; }
+.pay-steps li { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 4px; }
+.pay-steps b { font-size: 1.8rem; font-weight: 800; color: var(--web); letter-spacing: -0.02em; }
+.pay-steps span { color: #44434c; }
+@media (max-width: 560px) { .pay-steps { grid-template-columns: 1fr; } }
 .steps b { color: var(--ink); }
