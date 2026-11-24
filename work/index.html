@@ -707,7 +707,7 @@ function visible() {
   return items.filter((i) => inScope(i) &&
     (!dueOnly || (dueOnly === "over" ? isOver(i) : isSoon(i))) &&
     (!ui.statuses.length || ui.statuses.includes(i.status)) &&
-    (!ui.hideDone || i.status !== "done"));
+    (!ui.hideDone || i.status !== "done" || ui.q.trim())); // 검색할 때는 끝낸 일도 찾는다
 }
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title, "ko");
 function orderBetween(prev, next) {
@@ -730,6 +730,21 @@ function render() {
   if (onAreas) renderAreas(v);
   else if (!items.length) { v.innerHTML = `<div class="empty"><p><b>아직 업무가 없습니다.</b></p><p>오른쪽 위 <b>+ 새 업무</b>로 추가하거나, 메뉴의 <b>백업 파일 불러오기</b>로 한 번에 가져오세요.</p></div>`; }
   else ({ flow: renderFlow, board: renderBoard, time: renderTime, cal: ME ? renderCal : null, list: renderList, ref: ME ? renderRef : null }[ui.view] || renderFlow)(v);
+  // 걸러서 하나도 안 남으면 지금 걸린 필터를 다 보여 준다 (필터 줄이 옆으로 밀려 안 보일 때가 있어서)
+  const q = ui.q.trim().toLowerCase();
+  const on = [
+    ...ui.areas.map((k) => "분야 " + (areaOf(k).name || "?")), ...ui.tags.map((t) => "#" + t),
+    ...ui.kinds.map((k) => "종류 " + (k === "-" ? "없음" : k)), ...ui.owners.map((o) => "담당 " + o),
+    ...ui.statuses.map((k) => "단계 " + SNAME[k]), ...(dueOnly ? [dueOnly === "over" ? "마감 지남만" : "마감 임박만"] : []),
+    ...(q ? [`검색 '${ui.q.trim()}'`] : []),
+  ];
+  if (on.length && !onAreas && !onArc && items.length && !visible().length) {
+    const refHit = ME && q ? (tday?.kept || []).filter((i) => `${i.title} ${i.detail || ""} ${i.note || ""}`.toLowerCase().includes(q)).length : 0;
+    v.insertAdjacentHTML("afterbegin", `<div class="empty"><p><b>조건에 맞는 업무가 없습니다.</b></p>
+      <p>지금 걸린 필터: ${on.map((x) => `<span class="tag">${esc(x)}</span>`).join(" ")}</p>
+      <p><button type="button" class="btn" data-clearall>필터 · 검색 모두 지우기</button>${refHit ? ` <button type="button" class="btn" data-goref>레퍼런스에 ${refHit}개 있어요 →</button>` : ""}</p>
+      ${ME ? `<p class="msg">60일 지난 완료는 '오래된 완료 포함', 안 하기로 한 일은 '안 하기로 한 일'을 켜야 함께 나옵니다.</p>` : ""}</div>`);
+  }
   const sc = v.querySelector(".flow-wrap, .tl, .board, .table-wrap"); if (sc && scroll.x !== null) sc.scrollLeft = scroll.x;
   $$("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === ui.view)));
   $("#owners").innerHTML = owners().map((o) => `<option value="${esc(o)}">`).join("");
@@ -813,7 +828,7 @@ function card(it, opts = {}) {
 function renderFlow(v) {
   const list = visible();
   const lanes = areas.filter((a) => !ui.areas.length || ui.areas.includes(a.key));
-  const statuses = STATUS.filter((s) => !ui.statuses.length || ui.statuses.includes(s.key)).filter((s) => !(ui.hideDone && s.key === "done"));
+  const statuses = STATUS.filter((s) => !ui.statuses.length || ui.statuses.includes(s.key)).filter((s) => !(ui.hideDone && s.key === "done" && !ui.q.trim()));
   const cols = statuses.length;
   let html = `<div class="tl-tools"><label class="chip" style="cursor:pointer"><input type="checkbox" id="links-tg" ${ui.links ? "checked" : ""} style="margin:0"> 선행 연결선</label><span class="msg">카드를 끌어 단계나 분야를 옮깁니다. 카드를 누르면 자세히 볼 수 있습니다.</span></div>`;
   html += `<div class="flow-wrap"><div class="flow" style="grid-template-columns:170px repeat(${cols}, minmax(210px,1fr));min-width:${170 + cols * 210}px">`;
@@ -866,7 +881,7 @@ function chain(id) {
 // ───────── 보드 ─────────
 function renderBoard(v) {
   const list = visible();
-  const statuses = STATUS.filter((s) => !ui.statuses.length || ui.statuses.includes(s.key)).filter((s) => !(ui.hideDone && s.key === "done"));
+  const statuses = STATUS.filter((s) => !ui.statuses.length || ui.statuses.includes(s.key)).filter((s) => !(ui.hideDone && s.key === "done" && !ui.q.trim()));
   v.innerHTML = `<div class="board" style="grid-template-columns:repeat(${statuses.length}, minmax(240px,1fr))">${statuses.map((s) => {
     const col = list.filter((i) => i.status === s.key).sort((a, b) => areas.findIndex((x) => x.key === a.area) - areas.findIndex((x) => x.key === b.area) || byOrder(a, b));
     return `<section class="col" data-status="${s.key}"><div class="col-h">${stTag(s.key)}<em>${col.length}</em></div>${col.map((i) => card(i, { detail: true })).join("")}<button type="button" class="add-here" data-status="${s.key}">+ 추가</button></section>`;
@@ -1138,6 +1153,8 @@ document.addEventListener("click", (e) => {
       .catch(() => { ua.disabled = false; toast("꺼내지 못했습니다."); });
     return; }
   if (t.closest("[data-arcreload]")) { kept = null; render(); return; }
+  if (t.closest("[data-clearall]")) { Object.assign(ui, { areas: [], tags: [], kinds: [], owners: [], statuses: [], q: "" }); dueOnly = ""; $("#q").value = ""; saveUi(); render(); return; }
+  if (t.closest("[data-goref]")) { kept = null; ui.view = "ref"; saveUi(); render(); return; }
   const tab = t.closest("#tabs button"); if (tab) { if (tab.dataset.view === "ref") kept = null; /* 들어갈 때마다 새로 */ ui.view = tab.dataset.view; saveUi(); render(); return; }
   const z = t.closest("[data-zoom]"); if (z) { ui.zoom = z.dataset.zoom; saveUi(); render(); return; }
   const cm = t.closest("[data-cal]"); if (cm) { const n = Number(cm.dataset.cal), [yy, mm] = (ui.month || TODAY().slice(0, 7)).split("-").map(Number); ui.month = n ? ymd(new Date(yy, mm - 1 + n, 1)).slice(0, 7) : TODAY().slice(0, 7); saveUi(); render(); return; }
@@ -1147,7 +1164,7 @@ document.addEventListener("click", (e) => {
   const cday = t.closest(".cal-d"); if (cday && !t.closest("button")) { if (matchMedia("(max-width: 640px)").matches) { calExpand = calExpand === cday.dataset.day ? "" : cday.dataset.day; render(); } else openAdd({ due: cday.dataset.day }); return; }
   const ch = t.closest("#filters [data-g]");
   if (ch) { const g = ch.dataset.g;
-    if (g === "clear") { Object.assign(ui, { areas: [], tags: [], kinds: [], owners: [], statuses: [], hideDone: false }); dueOnly = ""; }
+    if (g === "clear") { Object.assign(ui, { areas: [], tags: [], kinds: [], owners: [], statuses: [], hideDone: false, q: "" }); dueOnly = ""; $("#q").value = ""; }
     else if (g === "hideDone") ui.hideDone = !ui.hideDone;
     else if (g === "allDone") { ui.allDone = !ui.allDone; saveUi(); refresh(); return; }
     else if (g === "showSkip") { ui.showSkip = !ui.showSkip; saveUi(); refresh(); return; }
