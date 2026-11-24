@@ -19,7 +19,9 @@
   <meta name="theme-color" content="#12131a">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&display=swap">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/web.css">
 </head>
 <body>
   <a class="skip" href="#main">본문 바로가기</a>
@@ -38,26 +40,32 @@
     </div>
   </header>
 
-  <main id="main">
-    <section class="page-head web">
-      <div class="wrap">
-        <span class="eyebrow">Web</span>
+  <main id="main" class="ed">
+    <section class="ed-hero">
+      <img class="ed-hero-img" src="/assets/img/web/hall.jpg" width="2000" height="1333" alt="" fetchpriority="high">
+      <div class="wrap ed-hero-text">
+        <span class="ed-eyebrow">Web · 홈페이지 제작</span>
         <h1>홈페이지는<br>읽는 사람의 것입니다</h1>
-        <p>연주회 날짜를 확인하려는 단원의 가족, 처음 악기를 배워 보려는 어른, 오늘의 공지를 올려야 하는 사무국. 한 홈페이지에는 저마다 다른 볼일을 가진 사람들이 드나듭니다. 저희는 화면을 꾸미기 전에, 그 사람들이 무엇을 찾으러 오는지부터 묻습니다.</p>
-        <div class="head-actions">
-          <a class="btn btn-gold" href="/contact/?type=web">원하는 홈페이지 이야기하기</a>
-        </div>
+        <p>한 홈페이지에는 저마다 다른 볼일을 가진 사람들이 드나듭니다.</p>
+        <a class="btn btn-gold" href="/contact/?type=web">원하는 홈페이지 이야기하기</a>
       </div>
     </section>
 
-    <section class="block">
+    <section class="ed-readers">
       <div class="wrap">
-        <div class="section-title">
-          <h2>지금 운영 중인 두 곳</h2>
-          <p>만들어 두고 잊힌 홈페이지가 아니라, 오늘도 누군가 공지를 올리고 문의를 받는 곳들입니다.</p>
+        <div class="ed-trio">
+          <figure><img src="/assets/img/web/family.jpg" width="900" height="1100" alt="무대에서 바이올린을 연주하는 단원들" loading="lazy"><figcaption>연주회 날짜를 확인하려는<br>단원의 가족</figcaption></figure>
+          <figure><img src="/assets/img/web/adult.jpg" width="900" height="1100" alt="피아노 건반 위의 두 손" loading="lazy"><figcaption>처음 악기를 배워 보려는<br>어른</figcaption></figure>
+          <figure><img src="/assets/img/web/office.jpg" width="900" height="1100" alt="책상에서 글을 쓰는 손과 커피 잔" loading="lazy"><figcaption>오늘의 공지를 올려야 하는<br>사무국</figcaption></figure>
         </div>
+        <p class="ed-lede">저희는 화면을 꾸미기 전에,<br>그 사람들이 무엇을 찾으러 오는지부터 묻습니다.</p>
+      </div>
+    </section>
 
-        <article class="case">
+    <section class="ed-section">
+      <div class="wrap">
+        <header class="ed-head"><span class="ed-num">01</span><h2>지금 운영 중인 두 곳</h2><p>만들어 두고 잊힌 홈페이지가 아니라, 오늘도 누군가 공지를 올리고 문의를 받는 곳들입니다.</p></header>
+        <article class="case ed-case">
           <div class="case-shot">
             <div class="browser">
               <div class="browser-bar"><i></i><i></i><i></i><span>kbaband.kr</span></div>
@@ -81,7 +89,7 @@
           </div>
         </article>
 
-        <article class="case">
+        <article class="case ed-case">
           <div class="case-shot">
             <div class="browser">
               <div class="browser-bar"><i></i><i></i><i></i><span>jncmusic.kr</span></div>
@@ -105,31 +113,28 @@
       </div>
     </section>
 
-    <section class="block alt">
-      <div class="wrap">
-        <div class="section-title">
-          <h2>필요한 만큼만</h2>
-          <p>모든 홈페이지에 모든 기능이 필요하지는 않습니다. 지금 꼭 있어야 할 것으로 시작하고, 쓰다 보면 생기는 필요는 그때 더해도 늦지 않습니다.</p>
-        </div>
-        <div class="grid grid-4">
-          <div class="card scope"><h3>반응형 디자인</h3><p>휴대폰에서도 컴퓨터에서도 같은 무게로 읽히게</p></div>
-          <div class="card scope"><h3>관리자 화면</h3><p>공지 · 배너 · 일정을 직접 고치는 화면</p></div>
-          <div class="card scope"><h3>회원 · 신청 관리</h3><p>가입 신청을 받고, 승인하고, 명단을 엑셀로</p></div>
-          <div class="card scope"><h3>게시판 · 자료실</h3><p>공지와 보도자료, 내려받을 서류</p></div>
-          <div class="card scope"><h3>상담 문의</h3><p>읽고 난 사람이 연락할 수 있는 자리</p></div>
-          <div class="card scope"><h3>검색 노출</h3><p>네이버 · 구글에서 찾아지도록</p></div>
-          <div class="card scope"><h3>도메인 · 호스팅</h3><p>주소 연결과 보안 인증서</p></div>
-          <div class="card scope"><h3>유지관리 · 마케팅</h3><p>공개한 뒤의 글과 소식</p></div>
+    <section class="ed-section ed-split">
+      <div class="wrap ed-split-in">
+        <figure class="ed-split-img"><img src="/assets/img/web/score.jpg" width="1000" height="1250" alt="펼쳐 놓은 악보" loading="lazy"></figure>
+        <div>
+          <header class="ed-head"><span class="ed-num">02</span><h2>필요한 만큼만</h2><p>모든 홈페이지에 모든 기능이 필요하지는 않습니다. 지금 꼭 있어야 할 것으로 시작하고, 쓰다 보면 생기는 필요는 그때 더해도 늦지 않습니다.</p></header>
+          <dl class="ed-scope">
+            <div><dt>반응형 디자인</dt><dd>휴대폰에서도 컴퓨터에서도 같은 무게로 읽히게</dd></div>
+            <div><dt>관리자 화면</dt><dd>공지 · 배너 · 일정을 직접 고치는 화면</dd></div>
+            <div><dt>회원 · 신청 관리</dt><dd>가입 신청을 받고, 승인하고, 명단을 엑셀로</dd></div>
+            <div><dt>게시판 · 자료실</dt><dd>공지와 보도자료, 내려받을 서류</dd></div>
+            <div><dt>상담 문의</dt><dd>읽고 난 사람이 연락할 수 있는 자리</dd></div>
+            <div><dt>검색 노출</dt><dd>네이버 · 구글에서 찾아지도록</dd></div>
+            <div><dt>도메인 · 호스팅</dt><dd>주소 연결과 보안 인증서</dd></div>
+            <div><dt>유지관리 · 마케팅</dt><dd>공개한 뒤의 글과 소식</dd></div>
+          </dl>
         </div>
       </div>
     </section>
 
-    <section class="block" id="price">
+    <section class="ed-section ed-tint" id="price">
       <div class="wrap">
-        <div class="section-title">
-          <h2>제작 비용</h2>
-          <p>단체를 소개하는 홈페이지는 정해진 값으로, 회원과 신청을 다루는 홈페이지는 이야기를 나눈 뒤 견적을 드립니다.</p>
-        </div>
+        <header class="ed-head"><span class="ed-num">03</span><h2>제작 비용</h2><p>단체를 소개하는 홈페이지는 정해진 값으로, 회원과 신청을 다루는 홈페이지는 이야기를 나눈 뒤 견적을 드립니다.</p></header>
         <div class="plans">
           <article class="plan">
             <div class="plan-name">실속형</div>
@@ -163,12 +168,16 @@
       </div>
     </section>
 
-    <section class="block alt" id="care">
+    <section class="ed-band" id="care">
+      <img class="ed-band-img" src="/assets/img/web/piano.jpg" width="2000" height="1333" alt="" loading="lazy">
+      <div class="wrap ed-band-text">
+        <span class="ed-num">04</span>
+        <h2>공개한 다음</h2>
+        <p>홈페이지는 공개한 날부터 조금씩 낡습니다.<br>공지는 쌓이고, 강사는 바뀌고, 인증서는 만료됩니다.<br>직접 돌보셔도 되고, 맡기셔도 됩니다.</p>
+      </div>
+    </section>
+    <section class="ed-section ed-after-band">
       <div class="wrap">
-        <div class="section-title">
-          <h2>공개한 다음</h2>
-          <p>홈페이지는 공개한 날부터 조금씩 낡습니다. 공지는 쌓이고, 강사는 바뀌고, 인증서는 만료됩니다. 직접 돌보셔도 되고, 맡기셔도 됩니다.</p>
-        </div>
         <div class="plans">
           <article class="plan">
             <div class="plan-name">기본 관리</div>
@@ -200,12 +209,9 @@
       </div>
     </section>
 
-    <section class="block" id="pay">
+    <section class="ed-section ed-tint" id="pay">
       <div class="wrap">
-        <div class="section-title">
-          <h2>결제</h2>
-          <p>제작비는 일이 나아가는 만큼 세 번에 나누어 받습니다.</p>
-        </div>
+        <header class="ed-head"><span class="ed-num">05</span><h2>결제</h2><p>제작비는 일이 나아가는 만큼 세 번에 나누어 받습니다.</p></header>
         <ol class="pay-steps">
           <li><b>30%</b><span>계약할 때</span></li>
           <li><b>30%</b><span>디자인 시안을 확정할 때</span></li>
@@ -218,40 +224,32 @@
       </div>
     </section>
 
-
-    <section class="block alt">
-      <div class="wrap">
-        <div class="section-title">
-          <h2>주로 함께 일하는 곳</h2>
+    <section class="ed-section">
+      <div class="wrap ed-two">
+        <div>
+          <header class="ed-head"><span class="ed-num">06</span><h2>주로 함께 일하는 곳</h2></header>
+          <dl class="ed-scope ed-scope-1">
+            <div><dt>협회 · 연맹</dt><dd>회원과 행사가 많은 단체</dd></div>
+            <div><dt>오케스트라 · 합창단</dt><dd>단원 소개, 연주 일정, 후원 안내</dd></div>
+            <div><dt>음악 · 예술학원</dt><dd>무엇을, 누가, 어디서 가르치는지</dd></div>
+            <div><dt>공연 · 축제</dt><dd>프로그램, 출연진, 참가 신청</dd></div>
+          </dl>
         </div>
-        <div class="grid grid-4">
-          <div class="card who"><h3>협회 · 연맹</h3><p>회원과 행사가 많은 단체</p></div>
-          <div class="card who"><h3>오케스트라 · 합창단</h3><p>단원 소개, 연주 일정, 후원 안내</p></div>
-          <div class="card who"><h3>음악 · 예술학원</h3><p>무엇을, 누가, 어디서 가르치는지</p></div>
-          <div class="card who"><h3>공연 · 축제</h3><p>프로그램, 출연진, 참가 신청</p></div>
+        <div>
+          <header class="ed-head"><span class="ed-num">07</span><h2>일하는 순서</h2></header>
+          <ol class="ed-steps">
+            <li><h3>상담</h3><p>누가 이 홈페이지를 찾아올지부터 묻습니다. 단체의 성격과 꼭 있어야 할 화면, 일정을 함께 정리합니다.</p></li>
+            <li><h3>기획 · 디자인</h3><p>메뉴의 차례와 첫 화면을 시안으로 보여 드리고, 함께 고쳐 가며 정합니다.</p></li>
+            <li><h3>개발</h3><p>휴대폰과 컴퓨터에서 같은 내용이 같은 무게로 읽히도록 만들고, 검색에 잡히도록 기본을 갖춥니다.</p></li>
+            <li><h3>공개 · 관리</h3><p>공개한 뒤에도 내용을 고치고, 원하시면 소식과 블로그 글을 이어서 씁니다.</p></li>
+          </ol>
         </div>
       </div>
     </section>
 
-    <section class="block alt">
+    <section class="ed-section ed-tint" id="faq">
       <div class="wrap">
-        <div class="section-title">
-          <h2>일하는 순서</h2>
-        </div>
-        <ol class="steps">
-          <li><h3>상담</h3><p>누가 이 홈페이지를 찾아올지부터 묻습니다. 단체의 성격과 꼭 있어야 할 화면, 일정을 함께 정리합니다.</p></li>
-          <li><h3>기획 · 디자인</h3><p>메뉴의 차례와 첫 화면을 시안으로 보여 드리고, 함께 고쳐 가며 정합니다.</p></li>
-          <li><h3>개발</h3><p>휴대폰과 컴퓨터에서 같은 내용이 같은 무게로 읽히도록 만들고, 검색에 잡히도록 기본을 갖춥니다.</p></li>
-          <li><h3>공개 · 관리</h3><p>공개한 뒤에도 내용을 고치고, 원하시면 소식과 블로그 글을 이어서 씁니다.</p></li>
-        </ol>
-      </div>
-    </section>
-
-        <section class="block" id="faq">
-      <div class="wrap">
-        <div class="section-title">
-          <h2>자주 묻는 질문</h2>
-        </div>
+        <header class="ed-head"><span class="ed-num">08</span><h2>자주 묻는 질문</h2></header>
         <div class="faq">
           <details><summary>만드는 데 얼마나 걸리나요?</summary><p>실속형은 소개 글과 사진을 받은 날부터 2~3주가 걸립니다. 맞춤형은 기능의 크기가 저마다 달라, 상담에서 일정을 함께 정합니다.</p></details>
           <details><summary>글과 사진은 누가 준비하나요?</summary><p>소개 글과 로고, 사진을 보내 주시면 화면에 맞게 다듬어 넣습니다. 무엇을 준비해야 할지 모르시겠다면, 그것부터 상담에서 함께 정리합니다.</p></details>
@@ -265,13 +263,12 @@
       </div>
     </section>
 
-    <section class="band">
-      <div class="wrap">
-        <div>
-          <h2>어떤 홈페이지를 생각하고 계신가요</h2>
-          <p>떠오르는 대로 골라 주시면 한 번 정리해서 연락드립니다. 지금 쓰는 홈페이지가 있다면 주소 하나면 충분합니다.</p>
-        </div>
-        <a class="btn btn-dark" href="/contact/?type=web">원하는 홈페이지 이야기하기</a>
+    <section class="ed-band ed-band-end">
+      <img class="ed-band-img" src="/assets/img/web/orchestra.jpg" width="2000" height="1163" alt="" loading="lazy">
+      <div class="wrap ed-band-text">
+        <h2>어떤 홈페이지를 생각하고 계신가요</h2>
+        <p>떠오르는 대로 골라 주시면 한 번 정리해서 연락드립니다.<br>지금 쓰는 홈페이지가 있다면 주소 하나면 충분합니다.</p>
+        <a class="btn btn-gold" href="/contact/?type=web">원하는 홈페이지 이야기하기</a>
       </div>
     </section>
   </main>
