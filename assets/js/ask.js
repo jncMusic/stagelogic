@@ -7,7 +7,7 @@ const PAY = ['계약할 때 한 번에', '선금 · 잔금 나눠서', '끝난 �
 const BILL = ['세금계산서', '카드 결제', '현금영수증', '상관없어요'];
 // /web/ 의 상품 버튼(?plan= · ?care=)이 미리 골라 두는 답
 const WEB_PLAN = { basic: '실속형 (150만 원부터)', custom: '맞춤형 (상담 후 결정)' };
-const WEB_CARE = { basic: '기본 관리 (월 3만 원부터)', full: '운영 대행 (월 15만 원부터)' };
+const WEB_CARE = { basic: '기본 관리 (월 49,900원부터)', full: '운영 대행 (월 15만 원부터)' };
 const payQs = (budget) => [
   { k: 'budget', q: '생각하시는 금액대', type: 'one', opts: budget },
   { k: 'pay', q: '결제는 어떻게 하시나요?', type: 'one', opts: PAY },
@@ -68,10 +68,9 @@ const FLOWS = {
       { k: 'care', q: '오픈 뒤 관리는 어떻게 할까요?', type: 'one', opts: ['우리가 직접 할게요', WEB_CARE.basic, WEB_CARE.full, '상의하고 싶어요'] },
       { k: 'open', q: '언제까지 열고 싶으세요?', type: 'date', none: '여유 있어요' },
     ],
-    // 제작비 결제는 계약 30% · 시안 30% · 오픈 40% 로 정해져 있어(/web/#pay) 나눠 내기는 묻지 않는다
+    // 제작비 결제는 카드로 계약 30% · 시안 30% · 오픈 40% 로 정해져 있어(/web/#pay) 나눠 내기 · 증빙은 묻지 않는다
     money: [
       { k: 'budget', q: '생각하시는 금액대', type: 'one', opts: ['150만 원 안팎', '150~300만 원', '300~600만 원', '600만 원 이상', '상의하고 싶어요'] },
-      { k: 'bill', q: '필요한 증빙', type: 'one', opts: BILL },
     ],
   },
   classlogic: {
