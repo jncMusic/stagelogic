@@ -597,4 +597,18 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
    web/  hall 1519683109079-d5f539e1542f · family 1465847899084-d164df4dedc6 · adult 1552422535-c45813c61732 · office 1434030216411-0b793f4b4173
          score 1507838153414-b4b713384a76 · piano 1513883049090-d0b7439799bf · orchestra 1465821185615-20b3c2fbf41b
    stage/ theater 1507924538820-ede94a04019d · yearend 1467810563316-b5476525c0f9 · newyear 1567593810070-7a3d471af022
-          ceremony 1540575467063-178a50c2df87 · banquet 1519167758481-83f550bb49b3 */
+          ceremony 1540575467063-178a50c2df87 · banquet 1519167758481-83f550bb49b3
+   samples/ (web/samples 시안) ac-hero 1514119412350-e174d90d280e · ac-piano 1552422535-c45813c61732 · ac-violin 1460036521480-ff49c08c2781
+          ac-guitar 1510915361894-db8b60106cb1 · ac-drum 1519892300165-cb5542fb47c7 · ac-room 1511379938547-c1f69419868d
+          as-hero 1519683109079-d5f539e1542f · as-orch 1465847899084-d164df4dedc6 · as-curtain 1503095396549-807759245b35
+          pe-hero 1513883049090-d0b7439799bf · pe-keys 1571974599782-87624638275e · pe-stage 1453090927415-5f45085b65c0
+          fe-hero 1492684223066-81342ee5ff30 · fe-crowd 1459749411175-04bf5292ceea · fe-sax 1415201364774-f6f0bb35f28f
+          fe-street 1525994886773-080587e161c2 · fe-fire 1567593810070-7a3d471af022 */
+/* /web/ 시안 카드 → /web/samples/<종류>/ */
+.sample-cards { gap: 24px; }
+.sample-card { display: grid; gap: 4px; text-decoration: none; color: inherit; }
+.sample-card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--line); margin-bottom: 10px; transition: transform .2s; }
+.sample-card:hover img { transform: translateY(-4px); }
+.sample-card .kind { color: var(--web); font-weight: 700; font-size: .85rem; }
+.sample-card b { font-size: 1.15rem; }
+.sample-card .desc { color: var(--muted); font-size: .93rem; }
