@@ -558,3 +558,43 @@ section.block.dark { background: var(--ink-2); color: var(--white); }
 }
 .biz-links { display: flex; gap: 16px; flex-wrap: wrap; }
 .biz-links a { color: inherit; }
+
+/* 사진 머리말 · 사진 띠 · 사진 카드 (/web/ /stage/) — 크기는 다른 화면의 page-head · block 과 같게 */
+.page-head.photo, .photo-band { position: relative; overflow: hidden; isolation: isolate; }
+.ph-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.page-head.photo::after, .photo-band::after { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(90deg, rgba(18, 19, 26, .9) 0%, rgba(18, 19, 26, .68) 55%, rgba(18, 19, 26, .4) 100%); }
+.page-head.photo p { color: #dcdbe3; }
+.photo-band .section-title p { color: #d2d1da; }
+.photo-band .plan:not(.plan-pro) { color: var(--ink); }
+.photo-cards { gap: 22px; }
+.photo-card { margin: 0; }
+.photo-card img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
+.photo-card figcaption { margin-top: 12px; font-weight: 700; }
+.card.has-photo { padding: 0; overflow: hidden; }
+.card.has-photo img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.card.has-photo h3, .card.has-photo p { padding: 0 22px; }
+.card.has-photo h3 { margin-top: 18px; }
+.card.has-photo p { padding-bottom: 20px; }
+.lede { margin: 44px 0 0; font-size: clamp(1.15rem, 2.2vw, 1.45rem); font-weight: 700; text-align: center; }
+.cases-more { margin: 24px 0 0; text-align: right; }
+.photo-split { display: grid; grid-template-columns: 5fr 7fr; gap: 48px; align-items: center; }
+.photo-split > img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+@media (max-width: 860px) { .photo-split, .two-col { grid-template-columns: 1fr; gap: 32px; } }
+.line-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; margin: 0; }
+.line-list.one { grid-template-columns: 1fr; }
+.line-list > div { border-top: 1px solid var(--line); padding: 14px 0 16px; }
+.line-list dt { font-weight: 700; }
+.line-list dd { margin: 2px 0 0; color: var(--muted); }
+@media (max-width: 560px) { .line-list { grid-template-columns: 1fr; } }
+.num-steps { list-style: none; margin: 0; padding: 0; counter-reset: st; }
+.num-steps li { counter-increment: st; position: relative; padding: 14px 0 16px 52px; border-top: 1px solid var(--line); }
+.num-steps li::before { content: counter(st, decimal-leading-zero); position: absolute; left: 0; top: 12px; font-weight: 800; font-size: 1.5rem; color: var(--gold); }
+.num-steps h3 { font-size: 1.05rem; margin: 0 0 2px; }
+.num-steps p { margin: 0; color: var(--muted); }
+/* 사진 출처: Unsplash (Unsplash License — 상업적 사용 가능, 표기 의무 없음) · https://unsplash.com/photos/<id>
+   web/  hall 1519683109079-d5f539e1542f · family 1465847899084-d164df4dedc6 · adult 1552422535-c45813c61732 · office 1434030216411-0b793f4b4173
+         score 1507838153414-b4b713384a76 · piano 1513883049090-d0b7439799bf · orchestra 1465821185615-20b3c2fbf41b
+   stage/ theater 1507924538820-ede94a04019d · yearend 1467810563316-b5476525c0f9 · newyear 1567593810070-7a3d471af022
+          ceremony 1540575467063-178a50c2df87 · banquet 1519167758481-83f550bb49b3 */
