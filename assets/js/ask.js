@@ -18,7 +18,7 @@ const payQs = (budget) => [
 const FLOWS = {
   academy: {
     icon: '🏫', goal: '학원을 열거나 바꾸고 싶어요', sub: '개원 · 운영 컨설팅, 개원 · 운영 체크리스트, 클래스로직', label: '학원 개원 · 컨설팅',
-    title: '학원 이야기를 들려주세요',
+    title: '학원에 대해 알려 주세요',
     qs: [
       { k: 'stage', q: '지금 어느 단계인가요?', type: 'one', opts: ['개원을 준비하고 있어요', '운영 중인데 바꾸고 싶어요'] },
       { k: 'academy', q: '어떤 학원인가요?', type: 'one', opts: ['음악', '미술', '무용 · 연기', '기타 예술'] },
@@ -30,14 +30,14 @@ const FLOWS = {
   },
   stage: {
     icon: '🎻', goal: '음악회나 행사를 열고 싶어요', sub: '송년 · 신년음악회, 기념식, 연회, 축제', label: '음악회 · 행사',
-    title: '어떤 자리를 그리고 계세요?',
+    title: '어떤 행사인가요?',
     qs: [
       { k: 'occasion', q: '어떤 자리인가요?', type: 'one', opts: ['송년음악회', '신년음악회', '창립기념 · 시상식', '총회 · 연회 · 만찬', '축제 · 야외 행사', '정기연주회', '기타'] },
       { k: 'when', q: '언제쯤인가요?', type: 'date', none: '아직 정하지 않았어요' },
       { k: 'venue', q: '장소는 정하셨나요?', type: 'one', opts: ['정했어요', '후보가 있어요', '추천받고 싶어요'] },
       { k: 'place', q: '장소나 지역', type: 'text', ph: '예: 서울 강남 호텔 연회장, 회사 대강당' },
       { k: 'guests', q: '손님은 몇 분쯤 오세요?', type: 'one', opts: ['50명 이하', '50~100명', '100~300명', '300명 이상', '아직 몰라요'] },
-      { k: 'mood', q: '손님들이 어떤 시간을 보내면 좋겠어요?', type: 'one', opts: ['식사하며 편하게 듣는 음악', '짧고 굵은 축하 무대', '제대로 된 한 편의 공연', '추천해 주세요'] },
+      { k: 'mood', q: '어떤 분위기를 원하세요?', type: 'one', opts: ['식사하며 편하게 듣는 음악', '짧고 굵은 축하 무대', '제대로 된 한 편의 공연', '추천해 주세요'] },
       { k: 'needs', q: '함께 맡기고 싶은 일', type: 'many', opts: ['연주 · 출연진', '사회 · 진행', '무대 · 음향 · 조명', '초대장 · 프로그램북', '사진 · 영상', '장소 섭외', '결과보고서'] },
     ],
     money: payQs(STAGE_BUDGET),
@@ -62,7 +62,7 @@ const FLOWS = {
       { k: 'plan', q: '생각하시는 상품', type: 'one', opts: [WEB_PLAN.basic, WEB_PLAN.custom, '잘 모르겠어요'] },
       { k: 'now', q: '지금 홈페이지가 있나요?', type: 'one', opts: ['없어요', '있는데 새로 만들고 싶어요', '있는 걸 고치고 싶어요'] },
       { k: 'url', q: '지금 홈페이지 · 블로그 주소', type: 'text', ph: '있으면 적어 주세요' },
-      { k: 'goals', q: '홈페이지로 하고 싶은 일', type: 'many', opts: ['우리를 제대로 소개하기', '상담 · 문의 더 받기', '회원 가입 받고 관리하기', '공지 · 소식 올리기', '공연 일정 알리기', '온라인 신청 · 접수 받기', '네이버 · 구글에서 찾아지기'] },
+      { k: 'goals', q: '홈페이지로 하고 싶은 일', type: 'many', opts: ['단체 · 학원 소개하기', '상담 · 문의 더 받기', '회원 가입 받고 관리하기', '공지 · 소식 올리기', '공연 일정 알리기', '온라인 신청 · 접수 받기', '네이버 · 구글에서 찾아지기'] },
       { k: 'ref', q: '마음에 드는 홈페이지', type: 'text', ph: '참고하고 싶은 사이트 주소나 느낌' },
       { k: 'ready', q: '준비된 자료', type: 'many', opts: ['로고', '소개 글', '사진', '아직 없어요'] },
       { k: 'care', q: '오픈 뒤 관리는 어떻게 할까요?', type: 'one', opts: ['우리가 직접 할게요', WEB_CARE.basic, WEB_CARE.full, '상의하고 싶어요'] },
@@ -75,7 +75,7 @@ const FLOWS = {
   },
   classlogic: {
     icon: '📒', goal: '학원 일을 덜고 싶어요', sub: '출결 · 시간표 · 수납 · 학부모 연락 (클래스로직)', label: '클래스로직',
-    title: '학원 이야기를 들려주세요',
+    title: '학원에 대해 알려 주세요',
     qs: [
       { k: 'academy', q: '어떤 학원인가요?', type: 'one', opts: ['음악', '미술', '무용 · 연기', '입시 · 보습', '기타'] },
       { k: 'students', q: '학생 수', type: 'one', opts: ['30명 이하', '30~80명', '80~150명', '150명 이상'] },
@@ -85,7 +85,7 @@ const FLOWS = {
       { k: 'want', q: '어떻게 해 드릴까요?', type: 'one', opts: ['도입 상담을 받고 싶어요', '화면을 먼저 보고 싶어요', '먼저 써 보고 싶어요'] },
     ],
     money: [
-      { k: 'fee', q: '한 달에 이 정도면 쓰겠다', type: 'one', opts: ['월 3만 원 이하', '월 3~5만 원', '월 5~10만 원', '월 10만 원 이상', '잘 모르겠어요'] },
+      { k: 'fee', q: '생각하시는 월 이용료', type: 'one', opts: ['월 3만 원 이하', '월 3~5만 원', '월 5~10만 원', '월 10만 원 이상', '잘 모르겠어요'] },
       { k: 'start', q: '언제부터 쓰고 싶으세요?', type: 'one', opts: ['바로', '다음 학기부터', '내년부터', '아직 몰라요'] },
     ],
   },
@@ -212,7 +212,7 @@ if (form) {
       '', data.get('message') || '',
     ].join('\n');
     location.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    say('메일 앱이 열리면 내용을 확인한 뒤 보내 주세요. 메일 앱이 열리지 않으면 오른쪽 메일 주소로 직접 보내 주셔도 됩니다.');
+    say('메일 앱에서 내용을 확인하고 보내 주세요. 메일 앱이 열리지 않으면 오른쪽 메일 주소로 보내 주세요.');
   };
 
   form.addEventListener('submit', async (e) => {
@@ -238,7 +238,7 @@ if (form) {
         form.hidden = true;
         const done = document.createElement('div');
         done.className = 'ask-done';
-        done.innerHTML = `<h2>잘 받았습니다, ${esc(data.get('name'))} 님</h2><p>고르신 내용을 보고 정리해서 ${list.find((x) => x.q === REACH[1].q) ? '말씀하신 때에' : '곧'} 연락드릴게요.</p>`
+        done.innerHTML = `<h2>잘 받았습니다, ${esc(data.get('name'))} 님</h2><p>내용을 보고 ${list.find((x) => x.q === REACH[1].q) ? '말씀하신 때에' : '곧'} 연락드릴게요.</p>`
           + '<a class="btn btn-line" href="/">처음 화면으로</a>';
         form.after(done);
         done.scrollIntoView({ behavior: 'smooth', block: 'center' });
