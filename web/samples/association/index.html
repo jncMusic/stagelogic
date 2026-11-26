@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>누리관악연합회 — 스테이지로직 홈페이지 시안</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@800&display=swap">
+<style>
+  :root { --navy: #14254a; --navy-2: #1d3466; --gold: #c9a24a; --paper: #f5f6f9; --ink: #1b1f2a; --muted: #5f6677; --line: #dfe3ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard Variable", Pretendard, sans-serif; color: var(--ink); background: #fff; line-height: 1.7; word-break: keep-all; }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ribbon { background: #12131a; color: #e8e6ee; font-size: .85rem; text-align: center; padding: 8px 16px; }
+  .ribbon a { color: #c9a24a; font-weight: 700; margin-left: 8px; }
+  header.top { background: #fff; border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; padding-bottom: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; }
+  .brand i { width: 30px; height: 30px; border-radius: 50%; background: var(--navy); box-shadow: inset 0 0 0 4px var(--gold); }
+  nav.menu { display: flex; gap: 26px; font-size: .95rem; font-weight: 600; }
+  nav.menu a { text-decoration: none; }
+  .member { border: 1.5px solid var(--navy); color: var(--navy); padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: .9rem; }
+  .hero { position: relative; color: #fff; overflow: hidden; isolation: isolate; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(20, 37, 74, .92), rgba(20, 37, 74, .55)); }
+  .hero .wrap { padding-top: 96px; padding-bottom: 96px; }
+  .hero small { color: var(--gold); letter-spacing: .18em; font-weight: 700; font-size: .8rem; }
+  .hero h1 { font-family: "Nanum Myeongjo", serif; font-size: clamp(2rem, 4.6vw, 3.2rem); margin: 10px 0 14px; line-height: 1.3; }
+  .hero p { color: #d7ddeb; max-width: 34em; margin: 0 0 28px; }
+  .btn { display: inline-block; background: var(--gold); color: var(--navy); font-weight: 800; padding: 12px 24px; border-radius: 6px; text-decoration: none; }
+  .quick { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-radius: 10px; margin-top: -40px; position: relative; box-shadow: 0 16px 40px rgba(20, 37, 74, .14); }
+  .quick a { padding: 22px; text-decoration: none; border-right: 1px solid var(--line); }
+  .quick a:last-child { border-right: 0; }
+  .quick b { display: block; color: var(--navy); }
+  .quick span { color: var(--muted); font-size: .88rem; }
+  section.band { padding: 80px 0; }
+  section.band.alt { background: var(--paper); }
+  h2 { font-family: "Nanum Myeongjo", serif; font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 24px; color: var(--navy); }
+  .board { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .board ul { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--navy); }
+  .board li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .board li span { color: var(--muted); font-size: .88rem; white-space: nowrap; }
+  .board h3 { margin: 0 0 12px; color: var(--navy); }
+  .events { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .event { background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  .event img { aspect-ratio: 3 / 2; object-fit: cover; width: 100%; }
+  .event div { padding: 18px 20px 22px; }
+  .event time { color: var(--gold); font-weight: 800; font-size: .9rem; }
+  .event h3 { margin: 4px 0; font-size: 1.08rem; }
+  .event p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .join { background: var(--navy); color: #fff; }
+  .join .wrap { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; padding-top: 56px; padding-bottom: 56px; }
+  .join h2 { color: #fff; margin: 0 0 6px; }
+  .join p { color: #c8d0e4; margin: 0; }
+  footer { padding: 36px 0; color: var(--muted); font-size: .88rem; }
+  @media (max-width: 860px) {
+    nav.menu { display: none; }
+    .quick { grid-template-columns: 1fr 1fr; }
+    .quick a:nth-child(2) { border-right: 0; }
+    .board, .events { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="ribbon">스테이지로직 홈페이지 시안 · 협회 / 단체 — 가상의 단체입니다.<a href="/web/#samples">← 홈페이지 제작으로</a></div>
+
+<header class="top"><div class="wrap">
+  <div class="brand"><i></i>누리관악연합회</div>
+  <nav class="menu"><a href="#news">공지</a><a href="#events">행사</a><a href="#join">회원</a><a href="#news">자료실</a></nav>
+  <a class="member" href="#join">회원 가입 신청</a>
+</div></header>
+
+<section class="hero">
+  <img src="/assets/img/samples/as-hero.jpg" width="1800" height="1200" alt="" fetchpriority="high">
+  <div class="wrap">
+    <small>NURI WIND ASSOCIATION</small>
+    <h1>관악을 하는 사람들이<br>함께 모이는 곳</h1>
+    <p>지회 12곳, 회원 단체 80여 곳이 함께합니다. 경연대회와 정기연주회, 지도자 연수를 엽니다.</p>
+    <a class="btn" href="#events">올해 행사 보기</a>
+  </div>
+</section>
+
+<div class="wrap">
+  <nav class="quick">
+    <a href="#join"><b>회원 가입</b><span>온라인으로 신청</span></a>
+    <a href="#events"><b>경연대회 접수</b><span>참가 신청서 제출</span></a>
+    <a href="#news"><b>자료실</b><span>규정 · 양식 내려받기</span></a>
+    <a href="#news"><b>지회 안내</b><span>지역별 연락처</span></a>
+  </nav>
+</div>
+
+<section class="band" id="news">
+  <div class="wrap board">
+    <div>
+      <h3>공지사항</h3>
+      <ul>
+        <li>제12회 관악경연대회 참가 요강 안내 <span>11. 20</span></li>
+        <li>2027년 정기총회 일정 안내 <span>11. 14</span></li>
+        <li>지도자 연수 수료증 발급 안내 <span>11. 02</span></li>
+        <li>회원 단체 정보 수정 방법 <span>10. 28</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>자료실</h3>
+      <ul>
+        <li>경연대회 참가 신청서 (한글) <span>11. 20</span></li>
+        <li>연합회 정관 <span>03. 04</span></li>
+        <li>회원 가입 안내서 <span>02. 15</span></li>
+        <li>지회 운영 규정 <span>01. 10</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="events">
+  <div class="wrap">
+    <h2>올해 행사</h2>
+    <div class="events">
+      <article class="event"><img src="/assets/img/samples/as-brass.jpg" width="900" height="600" alt="트럼펫을 연주하는 손" loading="lazy"><div><time>8월</time><h3>제12회 관악경연대회</h3><p>초 · 중 · 고 · 일반부, 전국 예선 후 본선</p></div></article>
+      <article class="event"><img src="/assets/img/samples/as-orch.jpg" width="900" height="600" alt="무대의 현악 단원들" loading="lazy"><div><time>10월</time><h3>연합 정기연주회</h3><p>회원 단체 합동 무대</p></div></article>
+      <article class="event"><img src="/assets/img/samples/as-conf.jpg" width="900" height="600" alt="원탁이 놓인 회의장" loading="lazy"><div><time>12월</time><h3>지도자 연수 · 정기총회</h3><p>지도 교사 연수와 한 해 결산</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="join" id="join">
+  <div class="wrap">
+    <div><h2>회원 가입 신청</h2><p>단체 정보와 대표자 연락처를 입력하면 사무국이 확인 후 승인합니다.</p></div>
+    <a class="btn" href="#join">가입 신청서 쓰기</a>
+  </div>
+</section>
+
+<footer><div class="wrap">누리관악연합회(가상) · 이 페이지는 스테이지로직 컴퍼니의 홈페이지 시안입니다.</div></footer>
+</body>
+</html>

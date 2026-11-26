@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>강변 브라스 페스티벌 — 스테이지로직 홈페이지 시안</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@900&display=swap">
+<style>
+  :root { --bg: #0e0b1a; --pink: #ff4f8b; --yellow: #ffd23f; --cyan: #3fd2ff; --text: #f3f0ff; --muted: #a9a3c4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard Variable", Pretendard, sans-serif; color: var(--text); background: var(--bg); line-height: 1.7; word-break: keep-all; }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ribbon { background: #12131a; color: #e8e6ee; font-size: .85rem; text-align: center; padding: 8px 16px; border-bottom: 1px solid #26232f; }
+  .ribbon a { color: #c9a24a; font-weight: 700; margin-left: 8px; }
+  header.top .wrap { display: flex; justify-content: space-between; align-items: center; padding-top: 18px; padding-bottom: 18px; }
+  .logo { font-family: "Gothic A1", sans-serif; font-weight: 900; letter-spacing: -.03em; font-size: 1.2rem; }
+  .logo b { color: var(--yellow); }
+  .ticket { background: var(--yellow); color: #111; font-weight: 800; text-decoration: none; padding: 10px 18px; border-radius: 999px; }
+  .hero { position: relative; overflow: hidden; isolation: isolate; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(14,11,26,.35), rgba(14,11,26,.95)); }
+  .hero .wrap { padding-top: 120px; padding-bottom: 64px; }
+  .hero .date { display: inline-block; background: var(--pink); font-weight: 800; padding: 6px 14px; border-radius: 6px; }
+  .hero h1 { font-family: "Gothic A1", sans-serif; font-weight: 900; font-size: clamp(2.6rem, 8vw, 6rem); line-height: 1.02; letter-spacing: -.05em; margin: 18px 0 16px; }
+  .hero h1 span { color: var(--yellow); }
+  .hero p { color: #dcd8ee; margin: 0; max-width: 32em; }
+  .count { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #2a2540; margin-top: 40px; border-radius: 14px; overflow: hidden; }
+  .count div { background: rgba(14, 11, 26, .85); padding: 20px; }
+  .count b { font-family: "Gothic A1", sans-serif; font-size: 2rem; color: var(--cyan); }
+  .count span { display: block; color: var(--muted); font-size: .9rem; }
+  section.band { padding: 80px 0; }
+  h2 { font-family: "Gothic A1", sans-serif; font-weight: 900; font-size: clamp(1.7rem, 3.6vw, 2.6rem); letter-spacing: -.03em; margin: 0 0 28px; }
+  .lineup { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .act { border-radius: 16px; overflow: hidden; background: #1a1530; }
+  .act img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+  .act div { padding: 16px 18px 20px; }
+  .act time { color: var(--pink); font-weight: 800; font-size: .9rem; }
+  .act h3 { margin: 2px 0 2px; }
+  .act p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .timetable { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .day { background: #1a1530; border-radius: 16px; padding: 24px; }
+  .day h3 { margin: 0 0 12px; color: var(--yellow); }
+  .day ul { list-style: none; margin: 0; padding: 0; }
+  .day li { display: flex; gap: 16px; padding: 10px 0; border-top: 1px solid #2a2540; }
+  .day li b { width: 56px; flex: none; color: var(--cyan); }
+  .apply { position: relative; overflow: hidden; isolation: isolate; border-radius: 24px; }
+  .apply img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .apply::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(14,11,26,.92), rgba(14,11,26,.4)); }
+  .apply div { padding: 56px 40px; }
+  .apply p { color: #dcd8ee; max-width: 30em; }
+  footer { padding: 40px 0; color: var(--muted); font-size: .88rem; }
+  @media (max-width: 860px) {
+    .lineup, .timetable { grid-template-columns: 1fr; }
+    .count { grid-template-columns: 1fr; }
+    .apply div { padding: 40px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="ribbon">스테이지로직 홈페이지 시안 · 공연 / 축제 — 가상의 축제입니다.<a href="/web/#samples">← 홈페이지 제작으로</a></div>
+
+<section class="hero">
+  <img src="/assets/img/samples/fe-hero.jpg" width="1800" height="1200" alt="" fetchpriority="high">
+  <header class="top"><div class="wrap"><div class="logo">강변<b>BRASS</b></div><a class="ticket" href="#apply">참가 신청</a></div></header>
+  <div class="wrap">
+    <span class="date">2027. 8. 21 – 22 · 강변 야외무대</span>
+    <h1>제1회<br>강변 <span>브라스</span><br>페스티벌</h1>
+    <p>관악 동호회, 학교 밴드, 프로 브라스 밴드가 이틀 동안 강변 무대에 오릅니다. 관람은 무료입니다.</p>
+    <div class="count">
+      <div><b>24</b><span>참가 팀</span></div>
+      <div><b>2일</b><span>공연 일정</span></div>
+      <div><b>무료</b><span>관람</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>라인업</h2>
+    <div class="lineup">
+      <article class="act"><img src="/assets/img/samples/fe-sax.jpg" width="800" height="600" alt="색소폰을 부는 연주자들" loading="lazy"><div><time>8. 21 (토) 19:00</time><h3>개막 공연 — 시티 재즈 빅밴드</h3><p>스윙부터 펑크까지</p></div></article>
+      <article class="act"><img src="/assets/img/samples/fe-street.jpg" width="800" height="600" alt="거리에서 연주하는 브라스 밴드" loading="lazy"><div><time>8. 22 (일) 15:00</time><h3>거리 퍼레이드</h3><p>강변 산책로를 따라 행진</p></div></article>
+      <article class="act"><img src="/assets/img/samples/fe-crowd.jpg" width="800" height="600" alt="무대 조명 아래의 관객" loading="lazy"><div><time>8. 22 (일) 20:00</time><h3>폐막 공연 — 연합 관악단</h3><p>참가 팀 전원 합동 무대</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="band" style="padding-top:0">
+  <div class="wrap">
+    <h2>시간표</h2>
+    <div class="timetable">
+      <div class="day"><h3>8월 21일 토요일</h3><ul><li><b>14:00</b>학교 밴드 무대 (6팀)</li><li><b>16:30</b>동호회 무대 (6팀)</li><li><b>19:00</b>개막 공연</li></ul></div>
+      <div class="day"><h3>8월 22일 일요일</h3><ul><li><b>13:00</b>동호회 무대 (6팀)</li><li><b>15:00</b>거리 퍼레이드</li><li><b>20:00</b>폐막 공연 · 불꽃놀이</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="apply" style="padding-top:0">
+  <div class="wrap">
+    <div class="apply">
+      <img src="/assets/img/samples/fe-fire.jpg" width="800" height="600" alt="" loading="lazy">
+      <div><h2>참가 팀 모집</h2><p>관악 동호회 · 학교 밴드 누구나 신청할 수 있습니다. 공연 영상과 팀 소개를 올리면 심사 후 7월 중 알려 드립니다.</p><a class="ticket" href="#apply">참가 신청서 쓰기</a></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">강변 브라스 페스티벌(가상) · 이 페이지는 스테이지로직 컴퍼니의 홈페이지 시안입니다.</div></footer>
+</body>
+</html>

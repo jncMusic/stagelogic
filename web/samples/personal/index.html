@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>피아니스트 윤하린 — 스테이지로직 홈페이지 시안</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;800&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
+<style>
+  :root { --ink: #111; --paper: #f4f2ee; --muted: #6d6a66; --line: #d9d5ce; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard Variable", Pretendard, sans-serif; color: var(--ink); background: var(--paper); line-height: 1.75; word-break: keep-all; }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ribbon { background: #12131a; color: #e8e6ee; font-size: .85rem; text-align: center; padding: 8px 16px; }
+  .ribbon a { color: #c9a24a; font-weight: 700; margin-left: 8px; }
+  header.top { position: absolute; left: 0; right: 0; z-index: 2; color: #fff; }
+  header.top .wrap { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; }
+  .name { font-family: "Cormorant Garamond", serif; font-size: 1.4rem; letter-spacing: .08em; }
+  nav.menu { display: flex; gap: 24px; font-size: .9rem; letter-spacing: .08em; }
+  nav.menu a { text-decoration: none; }
+  .hero { position: relative; min-height: 88vh; max-height: 820px; display: flex; align-items: flex-end; color: #fff; overflow: hidden; isolation: isolate; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; filter: grayscale(1); }
+  .hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.7)); }
+  .hero .wrap { width: 100%; padding-bottom: 72px; }
+  .hero em { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 1.3rem; opacity: .85; }
+  .hero h1 { font-family: "Nanum Myeongjo", serif; font-weight: 800; font-size: clamp(2.4rem, 6vw, 4.4rem); margin: 6px 0 0; letter-spacing: -.01em; }
+  section.band { padding: 96px 0; }
+  .label { font-family: "Cormorant Garamond", serif; font-size: 1.1rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 24px; }
+  .about { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; }
+  .about img { aspect-ratio: 4 / 5; object-fit: cover; width: 100%; filter: grayscale(1); }
+  .about p { font-family: "Nanum Myeongjo", serif; font-size: 1.15rem; line-height: 2; margin: 0 0 18px; }
+  .about .cv { font-family: inherit; font-size: .95rem; color: var(--muted); line-height: 1.9; }
+  .concerts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  .concerts li { display: grid; grid-template-columns: 140px 1fr auto; gap: 24px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .concerts time { font-family: "Cormorant Garamond", serif; font-size: 1.5rem; }
+  .concerts h3 { margin: 0; font-family: "Nanum Myeongjo", serif; font-size: 1.15rem; }
+  .concerts p { margin: 2px 0 0; color: var(--muted); font-size: .92rem; }
+  .concerts a { font-size: .85rem; letter-spacing: .06em; }
+  .listen { background: #111; color: #fff; }
+  .listen .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .listen img { aspect-ratio: 3 / 2; object-fit: cover; width: 100%; filter: grayscale(1); }
+  .listen .label { color: #9a968f; }
+  .listen h2 { font-family: "Nanum Myeongjo", serif; font-size: clamp(1.5rem, 3vw, 2.1rem); margin: 0 0 14px; }
+  .listen p { color: #bdb9b2; margin: 0 0 24px; }
+  .line-btn { display: inline-block; border: 1px solid currentColor; padding: 11px 22px; text-decoration: none; letter-spacing: .06em; font-size: .9rem; }
+  footer { padding: 48px 0; color: var(--muted); font-size: .88rem; }
+  @media (max-width: 860px) {
+    nav.menu { display: none; }
+    .about, .listen .wrap { grid-template-columns: 1fr; }
+    .about img { aspect-ratio: 4 / 3; }
+    .concerts li { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="ribbon">스테이지로직 홈페이지 시안 · 개인 연주자 — 가상의 인물입니다.<a href="/web/#samples">← 홈페이지 제작으로</a></div>
+
+<header class="top"><div class="wrap">
+  <div class="name">HARIN YOON</div>
+  <nav class="menu"><a href="#about">ABOUT</a><a href="#concerts">CONCERTS</a><a href="#listen">LISTEN</a><a href="#contact">CONTACT</a></nav>
+</div></header>
+
+<section class="hero">
+  <img src="/assets/img/samples/pe-hero.jpg" width="1800" height="1200" alt="" fetchpriority="high">
+  <div class="wrap"><em>Pianist</em><h1>윤하린</h1></div>
+</section>
+
+<section class="band" id="about">
+  <div class="wrap about">
+    <img src="/assets/img/samples/pe-keys.jpg" width="900" height="1100" alt="피아노 건반" loading="lazy">
+    <div>
+      <div class="label">About</div>
+      <p>슈베르트와 슈만의 가곡을 피아노로 다시 읽는 일에 오래 머물러 있습니다. 해마다 한 작곡가를 정해 독주회를 엽니다.</p>
+      <div class="cv">서울대학교 음악대학 졸업 (가상)<br>독일 쾰른 국립음대 최고연주자과정 (가상)<br>현재 실내악 단체 '여름밤 앙상블' 피아니스트 (가상)</div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="concerts" style="padding-top:0">
+  <div class="wrap">
+    <div class="label">Concerts</div>
+    <ul class="concerts">
+      <li><time>2027. 3. 14</time><div><h3>슈만 독주회 — 어린이의 정경</h3><p>예술의전당 IBK챔버홀 · 오후 7시 30분</p></div><a href="#contact">예매 안내</a></li>
+      <li><time>2027. 5. 2</time><div><h3>여름밤 앙상블 정기연주회</h3><p>세종문화회관 체임버홀 · 오후 5시</p></div><a href="#contact">예매 안내</a></li>
+      <li><time>2027. 9. 18</time><div><h3>렉처 콘서트 — 가곡을 피아노로</h3><p>지역 문화재단 공연장 · 오후 7시</p></div><a href="#contact">신청 안내</a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="band listen" id="listen">
+  <div class="wrap">
+    <img src="/assets/img/samples/pe-stage.jpg" width="900" height="600" alt="조명이 비친 빈 무대의 마이크" loading="lazy">
+    <div>
+      <div class="label">Listen</div>
+      <h2>지난 독주회 실황</h2>
+      <p>슈베르트 즉흥곡 D.899 전곡을 영상으로 들을 수 있습니다.</p>
+      <a class="line-btn" href="#listen">영상 보기</a>
+    </div>
+  </div>
+</section>
+
+<footer id="contact"><div class="wrap">공연 · 레슨 문의 contact@example.com · 윤하린(가상) · 이 페이지는 스테이지로직 컴퍼니의 홈페이지 시안입니다.</div></footer>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>소리결 음악학원 — 스테이지로직 홈페이지 시안</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root { --ink: #2b2420; --cream: #fbf6ee; --peach: #f3e3d3; --accent: #c8643b; --muted: #7a6d64; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard Variable", Pretendard, sans-serif; color: var(--ink); background: var(--cream); line-height: 1.7; word-break: keep-all; }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ribbon { background: #12131a; color: #e8e6ee; font-size: .85rem; text-align: center; padding: 8px 16px; }
+  .ribbon a { color: #c9a24a; font-weight: 700; margin-left: 8px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -.02em; }
+  .brand span { color: var(--accent); }
+  nav.menu { display: flex; gap: 22px; font-size: .95rem; }
+  nav.menu a { text-decoration: none; }
+  .btn { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; font-weight: 700; padding: 13px 24px; border-radius: 999px; }
+  .btn.line { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; padding: 40px 0 72px; }
+  .hero h1 { font-size: clamp(1.9rem, 3.6vw, 2.6rem); line-height: 1.3; margin: 0 0 18px; letter-spacing: -.03em; }
+  .hero p { color: var(--muted); margin: 0 0 28px; font-size: 1.08rem; }
+  .hero .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .hero img { border-radius: 28px; aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+  section.band { padding: 80px 0; }
+  section.band.alt { background: #fff; }
+  h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 10px; letter-spacing: -.02em; }
+  .sub { color: var(--muted); margin: 0 0 36px; }
+  .classes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .class { background: var(--cream); border-radius: 20px; overflow: hidden; }
+  .class img { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+  .class div { padding: 16px 18px 20px; }
+  .class h3 { margin: 0 0 4px; font-size: 1.1rem; }
+  .class p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: s; }
+  .steps li { list-style: none; background: var(--peach); border-radius: 20px; padding: 24px; counter-increment: s; }
+  .steps li::before { content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; margin-bottom: 10px; }
+  .steps h3 { margin: 0 0 4px; }
+  .steps p { margin: 0; color: var(--muted); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .split img { border-radius: 24px; aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0 0; padding: 0; }
+  .facts li { list-style: none; background: #fff; border-radius: 14px; padding: 14px 16px; }
+  .facts b { display: block; color: var(--accent); }
+  .contact { background: var(--ink); color: #fff; border-radius: 28px; padding: 48px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .contact p { color: #d8cfc8; margin: 6px 0 0; }
+  footer { padding: 40px 0; color: var(--muted); font-size: .88rem; }
+  @media (max-width: 860px) {
+    nav.menu { display: none; }
+    .hero, .split { grid-template-columns: 1fr; }
+    .classes { grid-template-columns: 1fr 1fr; }
+    .steps { grid-template-columns: 1fr; padding: 0; }
+    .contact { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="ribbon">스테이지로직 홈페이지 시안 · 음악학원 — 가상의 학원입니다.<a href="/web/#samples">← 홈페이지 제작으로</a></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">소리결<span>.</span> 음악학원</div>
+    <nav class="menu"><a href="#classes">수업</a><a href="#first">첫 상담</a><a href="#place">오시는 길</a></nav>
+    <a class="btn" href="#contact">상담 신청</a>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>처음 악기를 잡는 날부터<br>무대에 서는 날까지</h1>
+      <p>유아부터 성인까지, 1:1 레슨으로 진도를 맞춥니다. 수업이 끝나면 오늘 배운 것과 다음 과제를 보내 드립니다.</p>
+      <div class="acts"><a class="btn" href="#contact">체험 레슨 신청</a><a class="btn line" href="#classes">수업 보기</a></div>
+    </div>
+    <img src="/assets/img/samples/ac-hero.jpg" width="1800" height="1200" alt="악보가 놓인 피아노">
+  </section>
+</div>
+
+<section class="band alt" id="classes">
+  <div class="wrap">
+    <h2>수업</h2>
+    <p class="sub">악기마다 전공 강사가 맡습니다.</p>
+    <div class="classes">
+      <article class="class"><img src="/assets/img/samples/ac-piano.jpg" width="700" height="525" alt="피아노 건반 위의 손" loading="lazy"><div><h3>피아노</h3><p>바이엘부터 입시까지</p></div></article>
+      <article class="class"><img src="/assets/img/samples/ac-violin.jpg" width="700" height="525" alt="바이올린" loading="lazy"><div><h3>바이올린</h3><p>스즈키 교재 · 오케스트라 준비</p></div></article>
+      <article class="class"><img src="/assets/img/samples/ac-guitar.jpg" width="700" height="525" alt="통기타를 치는 손" loading="lazy"><div><h3>기타</h3><p>통기타 · 일렉기타</p></div></article>
+      <article class="class"><img src="/assets/img/samples/ac-drum.jpg" width="700" height="525" alt="드럼과 스틱" loading="lazy"><div><h3>드럼</h3><p>입문 · 밴드 합주</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="first">
+  <div class="wrap">
+    <h2>처음 오시면</h2>
+    <p class="sub">상담부터 첫 수업까지 일주일이면 됩니다.</p>
+    <ol class="steps">
+      <li><h3>상담 신청</h3><p>원하는 악기와 시간을 남겨 주세요.</p></li>
+      <li><h3>체험 레슨</h3><p>30분 동안 수준을 보고 진도를 정합니다.</p></li>
+      <li><h3>첫 수업</h3><p>담당 강사와 고정 시간에 시작합니다.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="band alt" id="place">
+  <div class="wrap split">
+    <img src="/assets/img/samples/ac-room.jpg" width="1000" height="750" alt="악기가 놓인 연습실" loading="lazy">
+    <div>
+      <h2>연습실과 오시는 길</h2>
+      <p class="sub">레슨이 없는 시간에는 연습실을 쓸 수 있습니다.</p>
+      <ul class="facts">
+        <li><b>운영</b>평일 13:00 – 21:00</li>
+        <li><b>토요일</b>10:00 – 17:00</li>
+        <li><b>연습실</b>개인 연습실 6실</li>
+        <li><b>주차</b>건물 지하 1시간 무료</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="contact">
+  <div class="wrap">
+    <div class="contact">
+      <div><h2>체험 레슨 신청</h2><p>전화 02-000-0000 · 카카오톡 채널 '소리결 음악학원'</p></div>
+      <a class="btn" href="#contact">상담 남기기</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">소리결 음악학원(가상) · 이 페이지는 스테이지로직 컴퍼니의 홈페이지 시안입니다.</div></footer>
+</body>
+</html>
